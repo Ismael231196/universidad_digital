@@ -1,0 +1,14 @@
+{
+  "projects": [
+    {
+      "name": "backend",
+      "path": "backend",
+      "buildCommand": "pip install -r requirements.txt"
+    },
+    {
+      "name": "frontend",
+      "path": "frontend",
+      "buildCommand": "npm install && npm run build"
+    }
+  ]
+}
