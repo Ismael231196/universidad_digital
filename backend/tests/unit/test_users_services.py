@@ -74,7 +74,7 @@ class TestCreateUser:
         data = UserCreate(
             email="admin@example.com",
             full_name="Admin",
-            password="Short1",  # Menos de 12 caracteres
+            password="Short123",  # >=8 (schema) pero <12 para regla de admin
             role_ids=[admin_role.id],
         )
 

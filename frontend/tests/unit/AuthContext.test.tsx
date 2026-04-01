@@ -28,12 +28,8 @@ describe("AuthContext / useAuth", () => {
   });
 
   it("debe lanzar error si useAuth se usa fuera de AuthProvider", () => {
-    // Arrange & Act
-    const { result } = renderHook(() => useAuth());
-
-    // Assert
-    expect(result.error).toEqual(
-      new Error("useAuth debe usarse dentro de AuthProvider")
+    expect(() => renderHook(() => useAuth())).toThrowError(
+      "useAuth debe usarse dentro de AuthProvider"
     );
   });
 
@@ -42,7 +38,7 @@ describe("AuthContext / useAuth", () => {
     (mockAuthService.login as unknown as vi.Mock).mockResolvedValue(undefined);
     (mockAuthService.getCurrentUser as unknown as vi.Mock).mockResolvedValue({
       id: 1,
-      name: "Admin",
+      full_name: "Admin",
       email: "admin@example.com",
       roles: ["Administrador"]
     });
@@ -92,7 +88,7 @@ describe("AuthContext / useAuth", () => {
     // Arrange
     (mockAuthService.getCurrentUser as unknown as vi.Mock).mockResolvedValue({
       id: 2,
-      name: "Docente",
+      full_name: "Docente",
       email: "teacher@example.com",
       roles: ["Docente"]
     });

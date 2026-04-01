@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,7 +21,7 @@ def create_grade(db: Session, data: GradeCreate) -> Grade:
         raise ConflictError("Inscripción inactiva.")
     grade = Grade(
         enrollment_id=data.enrollment_id,
-        value=data.value,
+        value=Decimal(str(data.value)),  # Convert float to Decimal
         notes=data.notes,
     )
     db.add(grade)
@@ -52,7 +54,7 @@ def update_grade(db: Session, grade_id: int, data: GradeUpdate, user: User) -> G
     """Actualiza una calificación."""
     grade = get_grade(db, grade_id, user)
     if data.value is not None:
-        grade.value = data.value
+        grade.value = Decimal(str(data.value))  # Convert float to Decimal
     if data.notes is not None:
         grade.notes = data.notes
     db.commit()

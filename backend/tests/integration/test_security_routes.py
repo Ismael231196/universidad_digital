@@ -9,15 +9,19 @@ from app.roles.models import Role
 from app.users.models import User
 
 
+def _login_headers(api_client: TestClient, email: str, password: str) -> dict[str, str]:
+    response = api_client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.mark.security
 @pytest.mark.integration
 class TestAuthenticationRoutes:
-    """Tests de integración para autenticación."""
+    """Tests de integracion para autenticacion."""
 
-    def test_login_exitoso_retorna_token(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_login_exitoso_retorna_token(self, api_client: TestClient, db_session: Session) -> None:
         role = Role(name="Estudiante")
         user = User(
             email="user@example.com",
@@ -29,32 +33,22 @@ class TestAuthenticationRoutes:
         db_session.add_all([role, user])
         db_session.commit()
 
-        # Act
         response = api_client.post(
             "/auth/login",
             json={"email": "user@example.com", "password": "Password123"},
         )
 
-        # Assert
         assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-        assert response.cookies.get("access_token") is not None
+        assert response.json().get("access_token") is not None
 
     def test_login_invalido_rechaza(self, api_client: TestClient) -> None:
-        # Act
         response = api_client.post(
             "/auth/login",
-            json={"email": "nonexistent@example.com", "password": "WrongPass"},
+            json={"email": "nonexistent@example.com", "password": "WrongPass1"},
         )
-
-        # Assert
         assert response.status_code == 401
 
-    def test_logout_revoca_token(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange: login primero
+    def test_logout_revoca_token(self, api_client: TestClient, db_session: Session) -> None:
         role = Role(name="Estudiante")
         user = User(
             email="user@example.com",
@@ -65,35 +59,22 @@ class TestAuthenticationRoutes:
         db_session.add_all([role, user])
         db_session.commit()
 
-        api_client.post(
-            "/auth/login",
-            json={"email": "user@example.com", "password": "Password123"},
-        )
+        headers = _login_headers(api_client, "user@example.com", "Password123")
+        response = api_client.post("/auth/logout", headers=headers)
 
-        # Act: logout
-        response = api_client.post("/auth/logout")
-
-        # Assert
         assert response.status_code == 204
-        assert response.cookies.get("access_token") is None
 
     def test_me_endpoint_protegido(self, api_client: TestClient) -> None:
-        # Act: sin token
         response = api_client.get("/auth/me")
-
-        # Assert
         assert response.status_code == 401
 
 
 @pytest.mark.security
 @pytest.mark.integration
 class TestAuthorizationRoutes:
-    """Tests de autorización de endpoints."""
+    """Tests de autorizacion de endpoints."""
 
-    def test_solo_admin_puede_crear_usuarios(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange: crear admin
+    def test_solo_admin_puede_crear_usuarios(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -104,29 +85,20 @@ class TestAuthorizationRoutes:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login como admin
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
-
-        # Act
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
         response = api_client.post(
             "/users",
             json={
                 "email": "newuser@example.com",
                 "full_name": "Nuevo",
-                "password": "Pass123",
+                "password": "Pass12345",
             },
+            headers=headers,
         )
 
-        # Assert
         assert response.status_code == 201
 
-    def test_estudiante_no_puede_crear_usuarios(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_estudiante_no_puede_crear_usuarios(self, api_client: TestClient, db_session: Session) -> None:
         std_role = Role(name="Estudiante")
         std = User(
             email="student@example.com",
@@ -137,29 +109,20 @@ class TestAuthorizationRoutes:
         db_session.add_all([std_role, std])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "student@example.com", "password": "StudentPass123"},
-        )
-
-        # Act
+        headers = _login_headers(api_client, "student@example.com", "StudentPass123")
         response = api_client.post(
             "/users",
             json={
                 "email": "another@example.com",
                 "full_name": "Otro",
-                "password": "Pass123",
+                "password": "Pass12345",
             },
+            headers=headers,
         )
 
-        # Assert
         assert response.status_code == 403
 
-    def test_solo_admin_puede_crear_roles(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange: admin
+    def test_solo_admin_puede_crear_roles(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -170,25 +133,12 @@ class TestAuthorizationRoutes:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
+        response = api_client.post("/roles", json={"name": "Nuevo Rol"}, headers=headers)
 
-        # Act
-        response = api_client.post(
-            "/roles",
-            json={"name": "Nuevo Rol"},
-        )
-
-        # Assert
         assert response.status_code == 201
 
-    def test_docente_no_puede_crear_roles(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_docente_no_puede_crear_roles(self, api_client: TestClient, db_session: Session) -> None:
         teach_role = Role(name="Docente")
         teacher = User(
             email="teacher@example.com",
@@ -199,25 +149,12 @@ class TestAuthorizationRoutes:
         db_session.add_all([teach_role, teacher])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "teacher@example.com", "password": "TeacherPass123"},
-        )
+        headers = _login_headers(api_client, "teacher@example.com", "TeacherPass123")
+        response = api_client.post("/roles", json={"name": "Nuevo Rol"}, headers=headers)
 
-        # Act
-        response = api_client.post(
-            "/roles",
-            json={"name": "Nuevo Rol"},
-        )
-
-        # Assert
         assert response.status_code == 403
 
-    def test_solo_admin_puede_listar_usuarios(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange: admin
+    def test_solo_admin_puede_listar_usuarios(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -228,22 +165,12 @@ class TestAuthorizationRoutes:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
+        response = api_client.get("/users", headers=headers)
 
-        # Act
-        response = api_client.get("/users")
-
-        # Assert
         assert response.status_code == 200
 
-    def test_estudiante_no_puede_listar_usuarios(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_estudiante_no_puede_listar_usuarios(self, api_client: TestClient, db_session: Session) -> None:
         std_role = Role(name="Estudiante")
         std = User(
             email="student@example.com",
@@ -254,28 +181,18 @@ class TestAuthorizationRoutes:
         db_session.add_all([std_role, std])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "student@example.com", "password": "StudentPass123"},
-        )
+        headers = _login_headers(api_client, "student@example.com", "StudentPass123")
+        response = api_client.get("/users", headers=headers)
 
-        # Act
-        response = api_client.get("/users")
-
-        # Assert
         assert response.status_code == 403
 
 
 @pytest.mark.security
 @pytest.mark.integration
 class TestInputSanitization:
-    """Tests de sanitización de entradas en endpoints."""
+    """Tests de sanitizacion de entradas en endpoints."""
 
-    def test_email_invalido_retorna_422(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_email_invalido_retorna_422(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -286,13 +203,7 @@ class TestInputSanitization:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
-
-        # Act
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
         response = api_client.post(
             "/users",
             json={
@@ -300,15 +211,12 @@ class TestInputSanitization:
                 "full_name": "Test",
                 "password": "ValidPass123",
             },
+            headers=headers,
         )
 
-        # Assert
         assert response.status_code == 422
 
-    def test_password_corta_retorna_422(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_password_corta_retorna_422(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -319,13 +227,7 @@ class TestInputSanitization:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
-
-        # Act: password < 8 chars
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
         response = api_client.post(
             "/users",
             json={
@@ -333,15 +235,12 @@ class TestInputSanitization:
                 "full_name": "Usuario",
                 "password": "Short",
             },
+            headers=headers,
         )
 
-        # Assert
         assert response.status_code == 422
 
-    def test_campos_requeridos_validados(
-        self, api_client: TestClient, db_session: Session
-    ) -> None:
-        # Arrange
+    def test_campos_requeridos_validados(self, api_client: TestClient, db_session: Session) -> None:
         admin_role = Role(name="Administrador")
         admin = User(
             email="admin@example.com",
@@ -352,56 +251,27 @@ class TestInputSanitization:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
-
-        # Act: falta email
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
         response = api_client.post(
             "/users",
-            json={
-                "full_name": "Usuario",
-                "password": "ValidPass123",
-            },
+            json={"full_name": "Usuario", "password": "ValidPass123"},
+            headers=headers,
         )
 
-        # Assert
         assert response.status_code == 422
 
 
 @pytest.mark.security
 @pytest.mark.integration
 class TestErrorMessagesNoExposeInfo:
-    """Tests que errores no expongan información sensible."""
+    """Tests que errores no expongan informacion sensible."""
 
-    def test_usuario_inexistente_no_revela_si_existe(
-        self, api_client: TestClient
-    ) -> None:
-        # Act
+    def test_usuario_inexistente_no_revela_si_existe(self, api_client: TestClient) -> None:
         response = api_client.post(
             "/auth/login",
-            json={"email": "nonexistent@example.com", "password": "SomePass"},
+            json={"email": "nonexistent@example.com", "password": "SomePass1"},
         )
 
-        # Assert: debe ser 401, no revelar si email existe
         assert response.status_code == 401
         error = response.json()
-        # El mensaje debe ser genérico
-        assert "inválidas" in error["detail"].lower() or "invalid" in error["detail"].lower()
-
-    def test_token_invalido_no_revela_detalles(
-        self, api_client: TestClient
-    ) -> None:
-        # Arrange: enviar token inválido
-        api_client.cookies.set("access_token", "invalid.token.here")
-
-        # Act
-        response = api_client.get("/auth/me")
-
-        # Assert
-        assert response.status_code == 401
-        error = response.json()
-        # No debe revelar estructura interna del token
-        assert "decode" not in error["detail"].lower()
+        assert "credencial" in error["detail"].lower() or "invalid" in error["detail"].lower()

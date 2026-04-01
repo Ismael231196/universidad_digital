@@ -11,6 +11,13 @@ from app.users.models import User
 from app.auth.services import authenticate_user
 
 
+def _login_headers(api_client: TestClient, email: str, password: str) -> dict[str, str]:
+    response = api_client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.mark.security
 @pytest.mark.unit
 class TestAuthenticationSecurity:
@@ -85,11 +92,7 @@ class TestAuthorizationSecurity:
         db_session.add_all([student_role, student])
         db_session.commit()
 
-        # Login como estudiante
-        api_client.post(
-            "/auth/login",
-            json={"email": "student@example.com", "password": "StudentPass123"},
-        )
+        headers = _login_headers(api_client, "student@example.com", "StudentPass123")
 
         # Act: intentar crear usuario
         response = api_client.post(
@@ -99,6 +102,7 @@ class TestAuthorizationSecurity:
                 "full_name": "Nuevo",
                 "password": "Pass123",
             },
+            headers=headers,
         )
 
         # Assert
@@ -118,20 +122,17 @@ class TestAuthorizationSecurity:
         db_session.add_all([teacher_role, teacher])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "teacher@example.com", "password": "TeacherPass123"},
-        )
+        headers = _login_headers(api_client, "teacher@example.com", "TeacherPass123")
 
         # Act: intentar crear rol (requiere admin)
-        response = api_client.post("/roles", json={"name": "NewRole"})
+        response = api_client.post("/roles", json={"name": "NewRole"}, headers=headers)
 
         # Assert
         assert response.status_code == 403
 
     def test_usuario_sin_token_rechazado(self, api_client: TestClient) -> None:
         # Arrange: sin hacer login
+        api_client.cookies.clear()
 
         # Act: intentar acceder endpoints protegidos
         response = api_client.get("/auth/me")
@@ -143,7 +144,8 @@ class TestAuthorizationSecurity:
         self, api_client: TestClient
     ) -> None:
         # Act
-        response = api_client.get("/users")
+        api_client.cookies.clear()
+        response = api_client.get("/users/")
 
         # Assert
         assert response.status_code == 401
@@ -167,11 +169,7 @@ class TestInputValidation:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: email inválido
         response = api_client.post(
@@ -181,6 +179,7 @@ class TestInputValidation:
                 "full_name": "Test",
                 "password": "ValidPass123",
             },
+            headers=headers,
         )
 
         # Assert
@@ -200,11 +199,7 @@ class TestInputValidation:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: password corta (< 8 para estudiante)
         response = api_client.post(
@@ -214,6 +209,7 @@ class TestInputValidation:
                 "full_name": "Estudiante",
                 "password": "Short",  # < 8 chars
             },
+            headers=headers,
         )
 
         # Assert
@@ -233,11 +229,7 @@ class TestInputValidation:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: full_name vacío
         response = api_client.post(
@@ -247,6 +239,7 @@ class TestInputValidation:
                 "full_name": "",  # Vacío
                 "password": "ValidPass123",
             },
+            headers=headers,
         )
 
         # Assert
@@ -266,11 +259,7 @@ class TestInputValidation:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: intentar inyección SQL en email
         response = api_client.post(
@@ -280,6 +269,7 @@ class TestInputValidation:
                 "full_name": "Attacker",
                 "password": "AttackerPass123",
             },
+            headers=headers,
         )
 
         # Assert: debe rechazar porque email inválido
@@ -299,11 +289,7 @@ class TestInputValidation:
         db_session.add_all([admin_role, admin])
         db_session.commit()
 
-        # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: XSS payload en full_name
         response = api_client.post(
@@ -313,6 +299,7 @@ class TestInputValidation:
                 "full_name": "<script>alert('XSS')</script>",
                 "password": "ValidPass123",
             },
+            headers=headers,
         )
 
         # Assert: debe aceptar (Pydantic y BD almacenan como texto)
@@ -335,28 +322,25 @@ class TestDataOwnership:
         user1 = User(
             email="user1@example.com",
             full_name="Usuario 1",
-            hashed_password=hash_password("Pass123"),
+            hashed_password=hash_password("Pass1234"),
         )
         user2 = User(
             email="user2@example.com",
             full_name="Usuario 2",
-            hashed_password=hash_password("Pass456"),
+            hashed_password=hash_password("Pass4567"),
         )
         user1.roles = [student_role]
         user2.roles = [student_role]
         db_session.add_all([student_role, user1, user2])
         db_session.commit()
 
-        # Login como user1
-        api_client.post(
-            "/auth/login",
-            json={"email": "user1@example.com", "password": "Pass123"},
-        )
+        headers = _login_headers(api_client, "user1@example.com", "Pass1234")
 
         # Act: intentar actualizar user2 (sin ser admin)
         response = api_client.put(
             f"/users/{user2.id}",
             json={"full_name": "Hackeo"},
+            headers=headers,
         )
 
         # Assert: debe ser 403
@@ -370,26 +354,22 @@ class TestDataOwnership:
         user1 = User(
             email="user1@example.com",
             full_name="Usuario 1",
-            hashed_password=hash_password("Pass123"),
+            hashed_password=hash_password("Pass1234"),
         )
         user2 = User(
             email="user2@example.com",
             full_name="Usuario 2",
-            hashed_password=hash_password("Pass456"),
+            hashed_password=hash_password("Pass4567"),
         )
         user1.roles = [student_role]
         user2.roles = [student_role]
         db_session.add_all([student_role, user1, user2])
         db_session.commit()
 
-        # Login como user1
-        api_client.post(
-            "/auth/login",
-            json={"email": "user1@example.com", "password": "Pass123"},
-        )
+        headers = _login_headers(api_client, "user1@example.com", "Pass1234")
 
         # Act: intentar eliminar user2
-        response = api_client.delete(f"/users/{user2.id}")
+        response = api_client.delete(f"/users/{user2.id}", headers=headers)
 
         # Assert
         assert response.status_code == 403

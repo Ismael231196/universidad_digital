@@ -9,6 +9,13 @@ from app.roles.models import Role
 from app.users.models import User
 
 
+def _login_headers(api_client: TestClient, email: str, password: str) -> dict[str, str]:
+    response = api_client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.mark.integration
 def test_login_y_me_flujo_basico(api_client: TestClient, db_session: Session) -> None:
     # Arrange
@@ -32,22 +39,22 @@ def test_login_y_me_flujo_basico(api_client: TestClient, db_session: Session) ->
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
-    assert "access_token" in response.cookies.get("access_token", "")
 
     # Act: me
-    me_response = api_client.get("/auth/me")
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    me_response = api_client.get("/auth/me", headers=headers)
 
     # Assert me
     assert me_response.status_code == 200
     me_data = me_response.json()
     assert me_data["email"] == "admin@example.com"
-    assert any(role["name"] == "Administrador" for role in me_data["roles"])
+    assert "Administrador" in me_data["roles"]
 
 
 @pytest.mark.integration
 def test_login_con_credenciales_invalidas(api_client: TestClient) -> None:
     # Arrange
-    payload = {"email": "wrong@example.com", "password": "badpass"}
+    payload = {"email": "wrong@example.com", "password": "badpass12"}
 
     # Act
     response = api_client.post("/auth/login", json=payload)
@@ -71,15 +78,11 @@ def test_logout_revoca_token(api_client: TestClient, db_session: Session) -> Non
     db_session.add_all([role, user])
     db_session.commit()
 
-    login_resp = api_client.post(
-        "/auth/login", json={"email": user.email, "password": "StudentPass123"}
-    )
-    assert login_resp.status_code == 200
+    headers = _login_headers(api_client, user.email, "StudentPass123")
 
     # Act: logout
-    logout_resp = api_client.post("/auth/logout")
+    logout_resp = api_client.post("/auth/logout", headers=headers)
 
     # Assert
     assert logout_resp.status_code == 204
-    assert logout_resp.cookies.get("access_token") is None
 

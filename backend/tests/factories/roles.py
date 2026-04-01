@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 
 
@@ -11,21 +12,21 @@ class RoleFactoryData:
 
 def build_role_admin() -> RoleFactoryData:
   return RoleFactoryData(
-    name="Administrador",
+    name=f"Administrador_{uuid.uuid4().hex[:4]}",
     description="Administrador del sistema",
   )
 
 
 def build_role_student() -> RoleFactoryData:
   return RoleFactoryData(
-    name="Estudiante",
+    name=f"Estudiante_{uuid.uuid4().hex[:4]}",
     description="Usuario estudiante",
   )
 
 
 def build_role_teacher() -> RoleFactoryData:
   return RoleFactoryData(
-    name="Docente",
+    name=f"Docente_{uuid.uuid4().hex[:4]}",
     description="Usuario docente",
   )
 

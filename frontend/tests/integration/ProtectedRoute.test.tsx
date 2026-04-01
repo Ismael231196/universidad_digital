@@ -71,7 +71,7 @@ describe("ProtectedRoute (integración)", () => {
     const value = {
       ...baseContext,
       isAuthenticated: true,
-      user: { id: 1, name: "User", email: "u@example.com", roles: [] }
+      user: { id: 1, full_name: "User", email: "u@example.com", roles: [] }
     } as AuthContextValue;
 
     // Act
@@ -91,7 +91,7 @@ describe("ProtectedRoute (integración)", () => {
     const value = {
       ...baseContext,
       isAuthenticated: true,
-      user: { id: 1, name: "User", email: "u@example.com", roles: ["Estudiante"] },
+      user: { id: 1, full_name: "User", email: "u@example.com", roles: ["Estudiante"] },
       hasRole: () => false
     } as AuthContextValue;
 
@@ -106,5 +106,5 @@ describe("ProtectedRoute (integración)", () => {
     // Assert
     expect(screen.getByText("Acceso denegado")).toBeInTheDocument();
   });
-}
+});
 

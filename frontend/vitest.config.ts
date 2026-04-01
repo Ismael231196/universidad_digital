@@ -17,7 +17,7 @@ export default defineConfig({
       statements: 85
     },
     include: ["tests/**/*.test.{ts,tsx}"],
-    exclude: ["node_modules", "dist"]
+    exclude: ["node_modules", "dist", "tests/e2e/**"]
   }
 });
 

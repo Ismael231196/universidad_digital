@@ -16,7 +16,7 @@ const renderWithRouter = (initialEntries: string[]) => {
 };
 
 describe("AppRoutes (integración)", () => {
-  it("debe mostrar la pantalla de login para ruta raíz /", () => {
+  it("debe mostrar la pantalla de login para ruta raíz /", async () => {
     // Arrange
     const initialRoute = ["/"];
 
@@ -24,12 +24,10 @@ describe("AppRoutes (integración)", () => {
     renderWithRouter(initialRoute);
 
     // Assert
-    expect(
-      screen.getByRole("heading", { name: /iniciar sesión/i })
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
-  it("debe mostrar página 404 para ruta inexistente (caso límite)", () => {
+  it("debe mostrar página 404 para ruta inexistente (caso límite)", async () => {
     // Arrange
     const initialRoute = ["/ruta/que/no/existe"];
 
@@ -37,9 +35,7 @@ describe("AppRoutes (integración)", () => {
     renderWithRouter(initialRoute);
 
     // Assert
-    expect(
-      screen.getByText(/página no encontrada/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/la página solicitada no existe/i)).toBeInTheDocument();
   });
 });
 

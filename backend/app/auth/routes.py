@@ -49,6 +49,7 @@ def logout_endpoint(
         except Exception:  # noqa: BLE001
             pass
     response.delete_cookie(settings.cookie_name)
+    response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 

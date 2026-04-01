@@ -47,43 +47,46 @@ describe("AppRoutes HomeRedirect (integración)", () => {
     renderWithAuth({
       user: {
         id: 1,
-        name: "Admin",
+        full_name: "Admin",
         email: "admin@example.com",
         roles: ["Administrador"]
       },
-      isAuthenticated: true
+      isAuthenticated: true,
+      hasRole: (roles) => roles.includes("Administrador")
     });
 
     // Assert
-    expect(screen.getByText("Admin dashboard")).toBeInTheDocument();
+    expect(screen.getByText(/panel administrador/i)).toBeInTheDocument();
   });
 
   it("redirige a /teacher si el usuario es Docente", () => {
     renderWithAuth({
       user: {
         id: 2,
-        name: "Teacher",
+        full_name: "Teacher",
         email: "t@example.com",
         roles: ["Docente"]
       },
-      isAuthenticated: true
+      isAuthenticated: true,
+      hasRole: (roles) => roles.includes("Docente")
     });
 
-    expect(screen.getByText("Teacher dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /panel docente/i })).toBeInTheDocument();
   });
 
   it("redirige a /student en cualquier otro caso", () => {
     renderWithAuth({
       user: {
         id: 3,
-        name: "Student",
+        full_name: "Student",
         email: "s@example.com",
         roles: ["Estudiante"]
       },
-      isAuthenticated: true
+      isAuthenticated: true,
+      hasRole: (roles) => roles.includes("Estudiante")
     });
 
-    expect(screen.getByText("Student dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /panel estudiante/i })).toBeInTheDocument();
   });
 });
 

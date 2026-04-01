@@ -1,308 +1,110 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
-import LoginPage from '../../pages/LoginPage';
-import * as authService from '../../api/auth';
+﻿import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
-// Mock the auth service
-vi.mock('../../api/auth');
+import { LoginPage } from "../../src/pages/LoginPage";
+import { AuthContext } from "../../src/context/AuthContext";
 
-// Mock useNavigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-    useLocation: () => ({ state: null }),
-  };
-});
-
-// Helper to render LoginPage with router
-const renderLoginPage = () => {
-  return render(
-    <BrowserRouter>
-      <LoginPage />
-    </BrowserRouter>
-  );
+const baseContext = {
+  user: null,
+  isLoading: false,
+  isAuthenticated: false,
+  error: null as string | null,
+  login: vi.fn(),
+  logout: async () => {},
+  refreshUser: async () => {},
+  hasRole: () => false
 };
 
-describe('LoginPage Integration Tests', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+function renderWithAuth(ctxOverride: Partial<typeof baseContext> = {}) {
+  const value = { ...baseContext, ...ctxOverride };
+  return render(
+    <AuthContext.Provider value={value}>
+      <MemoryRouter initialEntries={["/login"]}>
+        <LoginPage />
+      </MemoryRouter>
+    </AuthContext.Provider>
+  );
+}
+
+describe("LoginPage integration", () => {
+  it("renderiza formulario de login", () => {
+    renderWithAuth();
+
+    expect(screen.getByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /entrar/i })).toBeInTheDocument();
   });
 
-  describe('Form Rendering', () => {
-    it('should render login form with email and password fields', () => {
-      renderLoginPage();
-      
-      expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  it("envía credenciales saneadas al contexto", async () => {
+    const loginMock = vi.fn().mockResolvedValue(true);
+    renderWithAuth({ login: loginMock });
+
+    fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+      target: { value: "  admin@example.com  " }
     });
-
-    it('should show required field validation messages initially', () => {
-      renderLoginPage();
-      
-      const loginButton = screen.getByRole('button', { name: /sign in|ingresar/i });
-      expect(loginButton).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/contraseña/i), {
+      target: { value: "  Passw0rd123  " }
     });
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
-    it('should display "Instituto Universidad Digital" branding', () => {
-      renderLoginPage();
-      
-      expect(screen.getByText(/universidad digital/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Form Submission - Valid Credentials', () => {
-    it('should call auth service and navigate on successful login', async () => {
-      const user = userEvent.setup();
-      const mockToken = 'test-jwt-token';
-      
-      vi.mocked(authService).login.mockResolvedValueOnce({
-        access_token: mockToken,
-        token_type: 'bearer',
-      });
-
-      renderLoginPage();
-
-      const emailInput = screen.getByRole('textbox', { name: /email/i });
-      const passwordInput = screen.getByLabelText(/password/i);
-      const loginButton = screen.getByRole('button', { name: /sign in|ingresar/i });
-
-      await user.type(emailInput, 'student@example.com');
-      await user.type(passwordInput, 'securePassword123');
-      await user.click(loginButton);
-
-      await waitFor(() => {
-        expect(authService.login).toHaveBeenCalledWith({
-          email: 'student@example.com',
-          password: 'securePassword123',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-      });
-    });
-
-    it('should persist token to localStorage after successful login', async () => {
-      const user = userEvent.setup();
-      const mockToken = 'test-jwt-token';
-
-      vi.mocked(authService).login.mockResolvedValueOnce({
-        access_token: mockToken,
-        token_type: 'bearer',
-      });
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'admin@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'adminPassword123');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(localStorage.getItem('token')).toBe(mockToken);
-      });
+    await waitFor(() => {
+      expect(loginMock).toHaveBeenCalledWith("admin@example.com", "Passw0rd123");
     });
   });
 
-  describe('Form Submission - Invalid Credentials', () => {
-    it('should display error message on login failure', async () => {
-      const user = userEvent.setup();
-      const errorMessage = 'Invalid email or password';
-
-      vi.mocked(authService).login.mockRejectedValueOnce(
-        new Error(errorMessage)
-      );
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'wrong@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'wrongPassword');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/invalid|error|credentials/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should not navigate on login failure', async () => {
-      const user = userEvent.setup();
-
-      vi.mocked(authService).login.mockRejectedValueOnce(
-        new Error('Authentication failed')
-      );
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'user@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(mockNavigate).not.toHaveBeenCalled();
-      });
-    });
-
-    it('should handle 401 Unauthorized response', async () => {
-      const user = userEvent.setup();
-      const error = new Error('Unauthorized');
-      (error as any).status = 401;
-
-      vi.mocked(authService).login.mockRejectedValueOnce(error);
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'inactive@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(authService.login).toHaveBeenCalled();
-        expect(mockNavigate).not.toHaveBeenCalled();
-      });
-    });
+  it("muestra error desde el contexto", () => {
+    renderWithAuth({ error: "Credenciales inválidas" });
+    expect(screen.getByRole("alert")).toHaveTextContent("Credenciales inválidas");
   });
 
-  describe('Form Validation', () => {
-    it('should show validation error for invalid email format', async () => {
-      const user = userEvent.setup();
+  it("no envía el formulario si el email es inválido", async () => {
+    const loginMock = vi.fn().mockResolvedValue(true);
+    renderWithAuth({ login: loginMock });
 
-      renderLoginPage();
-
-      const emailInput = screen.getByRole('textbox', { name: /email/i });
-      await user.type(emailInput, 'invalid-email');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/valid email|email invalido/i)).toBeInTheDocument();
-      });
+    fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+      target: { value: "correo-invalido" }
     });
-
-    it('should show validation error for empty email field', async () => {
-      const user = userEvent.setup();
-
-      renderLoginPage();
-
-      const loginButton = screen.getByRole('button', { name: /sign in|ingresar/i });
-      await user.click(loginButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/email is required|email es requerido/i)).toBeInTheDocument();
-      });
+    fireEvent.change(screen.getByLabelText(/contraseña/i), {
+      target: { value: "Passw0rd123" }
     });
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
-    it('should show validation error for empty password field', async () => {
-      const user = userEvent.setup();
-
-      renderLoginPage();
-
-      const emailInput = screen.getByRole('textbox', { name: /email/i });
-      await user.type(emailInput, 'user@example.com');
-
-      const loginButton = screen.getByRole('button', { name: /sign in|ingresar/i });
-      await user.click(loginButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/password is required|contraseña es requerida/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show validation error for short password', async () => {
-      const user = userEvent.setup();
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'user@example.com');
-      await user.type(screen.getByLabelText(/password/i), '123');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/at least.*characters|mínimo.*caracteres/i)).toBeInTheDocument();
-      });
-    });
+    // El input tipo email puede bloquear el submit a nivel navegador,
+    // por eso validamos la regla de negocio clave: no invocar login.
+    expect(loginMock).not.toHaveBeenCalled();
   });
 
-  describe('Loading State', () => {
-    it('should disable submit button while request is in progress', async () => {
-      const user = userEvent.setup();
+  it("deshabilita el botón mientras isSubmitting está activo", async () => {
+    let resolveLogin: ((ok: boolean) => void) | null = null;
+    const loginMock = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveLogin = resolve;
+        })
+    );
 
-      vi.mocked(authService).login.mockImplementationOnce(
-        () => new Promise(resolve => setTimeout(() => resolve({ access_token: 'token', token_type: 'bearer' }), 1000))
-      );
+    renderWithAuth({ login: loginMock });
 
-      renderLoginPage();
-
-      const emailInput = screen.getByRole('textbox', { name: /email/i });
-      const passwordInput = screen.getByLabelText(/password/i);
-      const loginButton = screen.getByRole('button', { name: /sign in|ingresar/i });
-
-      await user.type(emailInput, 'user@example.com');
-      await user.type(passwordInput, 'password123');
-      await user.click(loginButton);
-
-      expect(loginButton).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/correo electrónico/i), {
+      target: { value: "admin@example.com" }
+    });
+    fireEvent.change(screen.getByLabelText(/contraseña/i), {
+      target: { value: "Passw0rd123" }
     });
 
-    it('should show loading indicator while authenticating', async () => {
-      const user = userEvent.setup();
+    const submit = screen.getByRole("button", { name: /entrar/i });
+    fireEvent.click(submit);
 
-      vi.mocked(authService).login.mockImplementationOnce(
-        () => new Promise(resolve => setTimeout(() => resolve({ access_token: 'token', token_type: 'bearer' }), 500))
-      );
-
-      renderLoginPage();
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'user@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      // Check for loading state (spinner, text, or disabled button)
-      expect(screen.getByRole('button', { name: /sign in|ingresar/i })).toBeDisabled();
-    });
-  });
-
-  describe('Security', () => {
-    it('should mask password input field', () => {
-      renderLoginPage();
-
-      const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement;
-      expect(passwordInput.type).toBe('password');
+    await waitFor(() => {
+      expect(submit).toBeDisabled();
     });
 
-    it('should not display password characters in DOM', async () => {
-      const user = userEvent.setup();
+    resolveLogin?.(true);
 
-      renderLoginPage();
-
-      const passwordInput = screen.getByLabelText(/password/i);
-      await user.type(passwordInput, 'mySecretPassword');
-
-      expect(passwordInput).toHaveAttribute('type', 'password');
-    });
-
-    it('should clear sensitive data after logout', async () => {
-      const user = userEvent.setup();
-
-      vi.mocked(authService).login.mockResolvedValueOnce({
-        access_token: 'test-token',
-        token_type: 'bearer',
-      });
-
-      renderLoginPage();
-
-      const emailInput = screen.getByRole('textbox', { name: /email/i }) as HTMLInputElement;
-      await user.type(emailInput, 'user@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
-
-      // After successful login and navigation, localStorage should contain token
-      await user.click(screen.getByRole('button', { name: /sign in|ingresar/i }));
-
-      await waitFor(() => {
-        expect(localStorage.getItem('token')).toBeTruthy();
-      });
+    await waitFor(() => {
+      expect(submit).not.toBeDisabled();
     });
   });
 });

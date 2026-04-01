@@ -34,6 +34,22 @@ def create_enrollment(db: Session, data: EnrollmentCreate, actor: User) -> Enrol
     if not period.is_active:
         raise ConflictError("Periodo académico inactivo.")
 
+    # DEBUG
+    import sys
+    print(f"DEBUG create_enrollment: checking existence user_id={data.user_id}, subject_id={data.subject_id}, period_id={data.period_id}", file=sys.stderr)
+    # show bind info
+    try:
+        bind = db.get_bind()
+    except Exception:
+        bind = None
+    print(f"DEBUG db bind: {bind}", file=sys.stderr)
+    
+    # Manually check database count
+    from sqlalchemy import func
+    count_query = select(func.count()).select_from(Enrollment)
+    total_count = db.scalar(count_query)
+    print(f"DEBUG total enrollments in db: {total_count}", file=sys.stderr)
+    
     exists = db.scalar(
         select(Enrollment).where(
             Enrollment.user_id == data.user_id,
@@ -41,6 +57,7 @@ def create_enrollment(db: Session, data: EnrollmentCreate, actor: User) -> Enrol
             Enrollment.period_id == data.period_id,
         )
     )
+    print(f"DEBUG create_enrollment: exists={exists}", file=sys.stderr)
     if exists:
         raise ConflictError("La inscripción ya existe.")
 

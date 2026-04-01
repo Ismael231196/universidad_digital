@@ -11,6 +11,15 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
+    "test:e2e:cypress": "cypress run",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:real": "cypress run --spec cypress/e2e/real-backend.cy.ts",
+    "cypress:run:crud": "cypress run --spec cypress/e2e/crud-admin.cy.ts --config baseUrl=http://localhost:3001",
+    "cypress:run:rbac": "cypress run --spec cypress/e2e/rbac-navigation.cy.ts --config baseUrl=http://localhost:3001",
+    "cypress:run:grades": "cypress run --spec cypress/e2e/grades-crud.cy.ts --config baseUrl=http://localhost:3001",
+    "cypress:run:hardening": "cypress run --spec cypress/e2e/auth-hardening.cy.ts --config baseUrl=http://localhost:3001",
+    "cypress:run:pro": "cypress run --spec cypress/e2e/auth.cy.ts,cypress/e2e/auth-hardening.cy.ts,cypress/e2e/rbac-navigation.cy.ts,cypress/e2e/crud-admin.cy.ts,cypress/e2e/grades-crud.cy.ts --config baseUrl=http://localhost:3001",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage"
   },
@@ -30,8 +39,10 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.3",
+    "cypress": "^15.11.0",
+    "jsdom": "^28.1.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.8",
-    "vitest": "^2.1.3"
+    "vitest": "^2.1.9"
   }
 }

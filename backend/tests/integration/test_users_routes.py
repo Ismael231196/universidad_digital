@@ -9,6 +9,13 @@ from app.roles.models import Role
 from app.users.models import User
 
 
+def _login_headers(api_client: TestClient, email: str, password: str) -> dict[str, str]:
+    response = api_client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.mark.integration
 class TestUsersCreate:
     def test_crear_usuario_como_admin(self, api_client: TestClient, db_session: Session) -> None:
@@ -25,11 +32,7 @@ class TestUsersCreate:
         db_session.commit()
 
         # Login como admin
-        login_resp = api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
-        assert login_resp.status_code == 200
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act: crear usuario
         payload = {
@@ -37,7 +40,7 @@ class TestUsersCreate:
             "full_name": "Nuevo Usuario",
             "password": "ValidPassword123",
         }
-        response = api_client.post("/users", json=payload)
+        response = api_client.post("/users", json=payload, headers=headers)
 
         # Assert
         assert response.status_code == 201
@@ -59,10 +62,7 @@ class TestUsersCreate:
         db_session.commit()
 
         # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "student@example.com", "password": "StudentPass123"},
-        )
+        headers = _login_headers(api_client, "student@example.com", "StudentPass123")
 
         # Act: intentar crear usuario
         payload = {
@@ -70,7 +70,7 @@ class TestUsersCreate:
             "full_name": "Otro",
             "password": "Password123",
         }
-        response = api_client.post("/users", json=payload)
+        response = api_client.post("/users", json=payload, headers=headers)
 
         # Assert
         assert response.status_code == 403
@@ -102,13 +102,10 @@ class TestUsersRead:
         db_session.commit()
 
         # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act
-        response = api_client.get("/users")
+        response = api_client.get("/users", headers=headers)
 
         # Assert
         assert response.status_code == 200
@@ -134,13 +131,10 @@ class TestUsersRead:
         db_session.commit()
 
         # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act
-        response = api_client.get(f"/users/{target_user.id}")
+        response = api_client.get(f"/users/{target_user.id}", headers=headers)
 
         # Assert
         assert response.status_code == 200
@@ -169,14 +163,11 @@ class TestUsersUpdate:
         db_session.commit()
 
         # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act
         payload = {"full_name": "Nombre Actualizado"}
-        response = api_client.put(f"/users/{target_user.id}", json=payload)
+        response = api_client.put(f"/users/{target_user.id}", json=payload, headers=headers)
 
         # Assert
         assert response.status_code == 200
@@ -207,13 +198,10 @@ class TestUsersDelete:
         db_session.commit()
 
         # Login
-        api_client.post(
-            "/auth/login",
-            json={"email": "admin@example.com", "password": "AdminPassword123"},
-        )
+        headers = _login_headers(api_client, "admin@example.com", "AdminPassword123")
 
         # Act
-        response = api_client.delete(f"/users/{target_user.id}")
+        response = api_client.delete(f"/users/{target_user.id}", headers=headers)
 
         # Assert
         assert response.status_code == 200

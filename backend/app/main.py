@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from decimal import Decimal
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +21,19 @@ from app.subjects.routes import router as subjects_router
 from app.users.routes import router as users_router
 
 
+class DecimalEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles Decimal objects."""
+    
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
 app = FastAPI(title=settings.api_title, version=settings.api_version)
+
+# Configure custom JSON encoder for Decimal serialization
+app.json_encoder = DecimalEncoder
 
 if settings.is_production:
     if not settings.jwt_secret:
@@ -44,6 +59,15 @@ def on_startup() -> None:
         ensure_default_roles(db)
     finally:
         db.close()
+
+
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Handle validation errors with proper JSON serialization."""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
 
 
 @app.exception_handler(NotFoundError)
