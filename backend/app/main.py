@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from decimal import Decimal
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -29,6 +32,8 @@ class DecimalEncoder(json.JSONEncoder):
             return float(obj)
         return super().default(obj)
 
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.api_title, version=settings.api_version)
 
@@ -59,8 +64,8 @@ def on_startup() -> None:
             ensure_default_roles(db)
         finally:
             db.close()
-    except Exception:
-        pass
+    except SQLAlchemyError as exc:
+        logger.warning("Database not ready at startup, skipping default roles: %s", exc)
 
 
 @app.exception_handler(RequestValidationError)
