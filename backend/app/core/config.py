@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = Field(default=False, validation_alias="APP_COOKIE_SECURE")
     cookie_samesite: str = Field(default="lax", validation_alias="APP_COOKIE_SAMESITE")
 
-    cors_origins: list[str] = Field(default_factory=list, validation_alias="APP_CORS_ORIGINS")
+    cors_origins: str | list[str] = Field(default_factory=list, validation_alias="APP_CORS_ORIGINS")
 
     auto_create_tables: bool = True
 
