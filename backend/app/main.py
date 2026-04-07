@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from decimal import Decimal
 
 from fastapi import FastAPI, Request
@@ -8,8 +9,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.core.config import settings
-from app.core.database import SessionLocal, init_db
+from app.core.database import SessionLocal
 from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError
 from app.roles.services import ensure_default_roles
 from app.auth.routes import router as auth_router
@@ -29,6 +32,8 @@ class DecimalEncoder(json.JSONEncoder):
             return float(obj)
         return super().default(obj)
 
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.api_title, version=settings.api_version)
 
@@ -53,12 +58,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
-    init_db()
-    db = SessionLocal()
     try:
-        ensure_default_roles(db)
-    finally:
-        db.close()
+        db = SessionLocal()
+        try:
+            ensure_default_roles(db)
+        finally:
+            db.close()
+    except SQLAlchemyError as exc:
+        logger.warning("Database not ready at startup, skipping default roles: %s", exc)
 
 
 @app.exception_handler(RequestValidationError)
