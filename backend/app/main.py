@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.database import SessionLocal, init_db
+from app.core.database import SessionLocal
 from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError
 from app.roles.services import ensure_default_roles
 from app.auth.routes import router as auth_router
@@ -53,12 +53,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
-    init_db()
-    db = SessionLocal()
     try:
-        ensure_default_roles(db)
-    finally:
-        db.close()
+        db = SessionLocal()
+        try:
+            ensure_default_roles(db)
+        finally:
+            db.close()
+    except Exception:
+        pass
 
 
 @app.exception_handler(RequestValidationError)
