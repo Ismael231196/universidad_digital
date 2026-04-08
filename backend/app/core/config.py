@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.env.lower() == "production"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _fix_database_url(cls, value: object) -> object:
+        if isinstance(value, str) and value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        return value
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _parse_cors_origins(cls, value: object) -> list[str]:
