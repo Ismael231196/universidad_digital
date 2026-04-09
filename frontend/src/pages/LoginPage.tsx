@@ -42,7 +42,12 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
+      <div className="login-logo">
+        <span style={{ fontSize: 28 }}>🎓</span>
+        <span className="login-logo-text">Universidad Digital</span>
+      </div>
       <h1>Iniciar sesión</h1>
+      <p className="login-subtitle">Accede a tu portal académico</p>
       {error ? <Alert message={error} /> : null}
       <form onSubmit={handleSubmit(onSubmit)} className="grid">
         <Input
@@ -58,7 +63,7 @@ export function LoginPage() {
           error={errors.password?.message}
         />
         <Button type="submit" disabled={isSubmitting}>
-          Entrar
+          {isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
       </form>
     </AuthLayout>
