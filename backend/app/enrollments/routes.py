@@ -17,7 +17,7 @@ from app.enrollments.services import (
 router = APIRouter(prefix="/enrollments", tags=["enrollments"])
 
 
-@router.post("/", response_model=EnrollmentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EnrollmentResponse, status_code=status.HTTP_201_CREATED)
 def create_enrollment_endpoint(
     payload: EnrollmentCreate,
     db: Session = Depends(get_db),
@@ -27,7 +27,7 @@ def create_enrollment_endpoint(
     return create_enrollment(db, payload, user)
 
 
-@router.get("/", response_model=list[EnrollmentResponse])
+@router.get("", response_model=list[EnrollmentResponse])
 def list_enrollments_endpoint(
     db: Session = Depends(get_db),
     user=Depends(get_current_user_dep),

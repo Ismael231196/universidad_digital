@@ -51,9 +51,11 @@ allowed_origins = settings.cors_origins or ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],
 )
 
 @app.on_event("startup")
@@ -102,11 +104,6 @@ def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": exc.message})
 
 
-@app.exception_handler(RequestValidationError)
-def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
-
-
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(roles_router)
@@ -114,3 +111,9 @@ app.include_router(subjects_router)
 app.include_router(periods_router)
 app.include_router(enrollments_router)
 app.include_router(grades_router)
+
+
+@app.get("/health", tags=["health"])
+def health_check() -> dict:
+    """Health check endpoint - no authentication required."""
+    return {"status": "ok"}

@@ -21,7 +21,7 @@ from app.periods.services import (
 router = APIRouter(prefix="/periods", tags=["periods"])
 
 
-@router.post("/", response_model=AcademicPeriodResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AcademicPeriodResponse, status_code=status.HTTP_201_CREATED)
 def create_period_endpoint(
     payload: AcademicPeriodCreate,
     db: Session = Depends(get_db),
@@ -30,7 +30,7 @@ def create_period_endpoint(
     return create_period(db, payload)
 
 
-@router.get("/", response_model=list[AcademicPeriodResponse])
+@router.get("", response_model=list[AcademicPeriodResponse])
 def list_periods_endpoint(
     db: Session = Depends(get_db),
     _user=Depends(require_roles_dep("Administrador", "Docente", "Estudiante")),
