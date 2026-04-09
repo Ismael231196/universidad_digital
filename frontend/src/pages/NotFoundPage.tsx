@@ -33,7 +33,7 @@ export function NotFoundPage() {
         Página no encontrada
       </h2>
       <p style={{ color: "var(--text-secondary)", maxWidth: 380, margin: "0 0 28px 0" }}>
-        La página que buscas no existe o fue movida. Verifica la dirección o vuelve al inicio.
+        La página solicitada no existe o fue movida. Verifica la dirección o vuelve al inicio.
       </p>
       <Link
         to="/"

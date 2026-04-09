@@ -23,7 +23,7 @@ export function TeacherDashboard() {
       </div>
 
       <div className="page-header">
-        <h2 className="page-title">Tu espacio docente</h2>
+        <h2 className="page-title">Panel Docente</h2>
         <p className="page-subtitle">Accede a las herramientas disponibles para ti</p>
       </div>
 

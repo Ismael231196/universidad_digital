@@ -51,9 +51,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Sidebar */}
       <aside className={`sidebar${sidebarOpen ? " open" : ""}`} aria-label="Navegación principal">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-title">🎓 Universidad Digital</div>
-          <div className="sidebar-brand-sub">Portal Académico</div>
+        <div className="sidebar-brand" aria-hidden="true">
+          <div className="sidebar-brand-title">🎓 Portal Académico</div>
+          <div className="sidebar-brand-sub">Plataforma educativa</div>
         </div>
         <nav className="sidebar-nav" aria-label="Menú principal">
           <ul className="sidebar-list">

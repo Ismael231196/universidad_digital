@@ -23,7 +23,7 @@ export function StudentDashboard() {
       </div>
 
       <div className="page-header">
-        <h2 className="page-title">Tu espacio académico</h2>
+        <h2 className="page-title">Panel Estudiante</h2>
         <p className="page-subtitle">Todo lo que necesitas en un solo lugar</p>
       </div>
 

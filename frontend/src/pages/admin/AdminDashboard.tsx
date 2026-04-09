@@ -46,7 +46,7 @@ export function AdminDashboard() {
       </div>
 
       <div className="page-header">
-        <h2 className="page-title">Acceso rápido</h2>
+        <h2 className="page-title">Panel Administrador</h2>
         <p className="page-subtitle">Navega a las secciones principales</p>
       </div>
 
