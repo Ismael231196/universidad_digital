@@ -19,7 +19,7 @@ from app.users.services import (
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user_endpoint(
     payload: UserCreate,
     db: Session = Depends(get_db),
@@ -29,7 +29,7 @@ def create_user_endpoint(
     return UserResponse.model_validate(user, from_attributes=True)
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("", response_model=list[UserResponse])
 def list_users_endpoint(
     db: Session = Depends(get_db),
     _admin=Depends(require_roles_dep("Administrador")),

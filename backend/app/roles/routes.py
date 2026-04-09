@@ -11,7 +11,7 @@ from app.roles.services import create_role, delete_role, get_role, list_roles, u
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 
-@router.post("/", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
 def create_role_endpoint(
     payload: RoleCreate,
     db: Session = Depends(get_db),
@@ -20,7 +20,7 @@ def create_role_endpoint(
     return create_role(db, payload)
 
 
-@router.get("/", response_model=list[RoleResponse])
+@router.get("", response_model=list[RoleResponse])
 def list_roles_endpoint(
     db: Session = Depends(get_db),
     _admin=Depends(require_roles_dep("Administrador")),
