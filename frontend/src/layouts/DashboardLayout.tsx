@@ -61,7 +61,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               <>
                 <li>
                   <NavLink to="/admin" end className="sidebar-link" onClick={closeSidebar}>
-                    🏛️ Panel Admin
+                    🏛️ Panel Administrador
                   </NavLink>
                 </li>
                 <li>
