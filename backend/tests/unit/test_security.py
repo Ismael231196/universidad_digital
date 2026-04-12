@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
+from app.core.security import hash_password, is_jwt_error, create_access_token, decode_access_token
 from app.core.errors import UnauthorizedError, ForbiddenError
 from app.roles.models import Role
 from app.users.models import User
@@ -16,6 +16,36 @@ def _login_headers(api_client: TestClient, email: str, password: str) -> dict[st
     assert response.status_code == 200
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.mark.unit
+class TestCoreSecurityFunctions:
+    """Unit tests for core security module functions."""
+
+    def test_is_jwt_error_with_jwt_error(self):
+        from jose import JWTError
+        assert is_jwt_error(JWTError("bad token")) is True
+
+    def test_is_jwt_error_with_non_jwt_error(self):
+        assert is_jwt_error(ValueError("not jwt")) is False
+
+    def test_create_access_token_raises_without_secret(self, monkeypatch):
+        import app.core.security as sec
+        monkeypatch.setattr(sec.settings, "jwt_secret", None)
+        with pytest.raises(RuntimeError, match="APP_JWT_SECRET no configurado"):
+            create_access_token(subject="1", jti="test-jti")
+
+    def test_decode_access_token_raises_without_secret(self, monkeypatch):
+        import app.core.security as sec
+        monkeypatch.setattr(sec.settings, "jwt_secret", None)
+        with pytest.raises(RuntimeError, match="APP_JWT_SECRET no configurado"):
+            decode_access_token("fake.token.here")
+
+    def test_hash_and_verify_password(self):
+        from app.core.security import verify_password
+        hashed = hash_password("TestPass123")
+        assert verify_password("TestPass123", hashed) is True
+        assert verify_password("WrongPass", hashed) is False
 
 
 @pytest.mark.security
