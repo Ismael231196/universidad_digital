@@ -1,6 +1,8 @@
 import pytest
 from decimal import Decimal
 
+pytestmark = pytest.mark.unit
+
 from app.core.errors import ConflictError, NotFoundError
 from app.grades.services import create_grade, delete_grade, get_grade, list_grades, update_grade
 from app.users.models import User

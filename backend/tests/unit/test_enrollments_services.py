@@ -1,6 +1,8 @@
 import uuid
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from app.core.errors import ConflictError, NotFoundError
 from app.enrollments.models import Enrollment
 from app.roles.models import Role
