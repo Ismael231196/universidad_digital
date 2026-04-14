@@ -26,7 +26,7 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
 
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2d3748;">🎓 Universidad Digital</h2>
+        <h2 style="color: #2d3748;">Universidad Digital</h2>
         <h3>Restablecimiento de contraseña</h3>
         <p>Hola <strong>{full_name}</strong>,</p>
         <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
@@ -57,21 +57,29 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
         "Si no solicitaste este cambio, puedes ignorar este email."
     )
 
+    # Payload mínimo para evitar 400 Bad Request por schema
     payload = {
-        "from": {"email": settings.mail_from, "name": "Universidad Digital"},
-        "to": [{"email": to_email, "name": full_name}],
+        "from": {"email": settings.mail_from},
+        "to": [{"email": to_email}],
         "subject": "Restablecimiento de contraseña - Universidad Digital",
         "text": text_content,
         "html": html_content,
-        "category": "Password Reset",
     }
 
     url = f"{MAILTRAP_SANDBOX_BASE_URL}/api/send/{int(settings.mailtrap_inbox_id)}"
-    headers = {"Authorization": f"Bearer {settings.mailtrap_api_token}"}
+    headers = {
+        "Authorization": f"Bearer {settings.mailtrap_api_token}",
+        "Content-Type": "application/json",
+    }
 
     try:
         with httpx.Client(timeout=15.0) as client:
             resp = client.post(url, json=payload, headers=headers)
+
+            # Log del error real de Mailtrap para depurar (muy útil en Railway)
+            if resp.status_code >= 400:
+                logger.error("Mailtrap error status=%s body=%s", resp.status_code, resp.text)
+
             resp.raise_for_status()
 
         logger.info("Email de restablecimiento enviado a %s via Mailtrap Sandbox API", to_email)
