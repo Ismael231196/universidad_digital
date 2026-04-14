@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import smtplib
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -17,6 +16,7 @@ from app.auth.services import (
 )
 from app.core.config import settings
 from app.core.deps import get_current_user_dep, get_db
+from app.core.email import EmailDeliveryError
 from app.users.schemas import UserResponse
 
 
@@ -70,11 +70,11 @@ def forgot_password_endpoint(
     payload: ForgotPasswordRequest, response: Response, db: Session = Depends(get_db)
 ) -> Response:
     """Solicita el restablecimiento de contraseña. Siempre responde 204 para no revelar emails.
-    Si el envío SMTP falla responde 502 para que el cliente muestre un error al usuario.
+    Si el envío de email falla responde 502 para que el cliente muestre un error al usuario.
     """
     try:
         request_password_reset(db, payload.email)
-    except (OSError, smtplib.SMTPException):
+    except EmailDeliveryError:
         logger.exception("Error al procesar solicitud de restablecimiento de contraseña")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

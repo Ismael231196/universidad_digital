@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.core.email import EmailDeliveryError
 from app.core.security import hash_password
 from app.roles.models import Role
 from app.users.models import User
@@ -100,10 +101,10 @@ def test_forgot_password_email_no_registrado_responde_204(api_client: TestClient
 
 
 @pytest.mark.integration
-def test_forgot_password_email_registrado_smtp_ok_responde_204(
+def test_forgot_password_email_registrado_envio_ok_responde_204(
     api_client: TestClient, db_session: Session
 ) -> None:
-    """Para email registrado y SMTP exitoso responde 204."""
+    """Para email registrado y envío exitoso responde 204."""
     user = User(
         email="docente@example.com",
         full_name="Docente",
@@ -124,10 +125,10 @@ def test_forgot_password_email_registrado_smtp_ok_responde_204(
 
 
 @pytest.mark.integration
-def test_forgot_password_smtp_falla_responde_502(
+def test_forgot_password_mailtrap_falla_responde_502(
     api_client: TestClient, db_session: Session
 ) -> None:
-    """Si el envío SMTP falla, el endpoint responde 502 con mensaje seguro."""
+    """Si el envío de email falla, el endpoint responde 502 con mensaje seguro."""
     user = User(
         email="docente2@example.com",
         full_name="Docente2",
@@ -139,7 +140,7 @@ def test_forgot_password_smtp_falla_responde_502(
 
     with patch(
         "app.auth.services.send_password_reset_email",
-        side_effect=OSError("SMTP connection refused"),
+        side_effect=EmailDeliveryError("Mailtrap API unavailable"),
     ):
         response = api_client.post(
             "/auth/forgot-password",
@@ -148,4 +149,3 @@ def test_forgot_password_smtp_falla_responde_502(
 
     assert response.status_code == 502
     assert "correo" in response.json()["detail"].lower()
-

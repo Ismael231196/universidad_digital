@@ -1,27 +1,28 @@
 from __future__ import annotations
 
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from urllib.parse import urlencode
 
+import mailtrap as mt
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SMTP_TIMEOUT = 10  # seconds – evita requests colgadas por SMTP lento/inaccesible
+
+class EmailDeliveryError(RuntimeError):
+    """Error al enviar emails de restablecimiento."""
 
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
-    """Envía el email de restablecimiento de contraseña via Mailtrap SMTP."""
-    if not settings.mail_user or not settings.mail_pass:
-        logger.warning(
-            "MAIL_USER / MAIL_PASS no configurados. "
-            "Email de restablecimiento no enviado."
+    """Envía el email de restablecimiento de contraseña vía Mailtrap Sandbox API."""
+    if not settings.mailtrap_api_token or not settings.mailtrap_inbox_id or not settings.mail_from:
+        logger.error(
+            "MAILTRAP_API_TOKEN / MAILTRAP_INBOX_ID / MAIL_FROM no configurados."
         )
-        return
+        raise EmailDeliveryError("Configuración de email incompleta.")
 
-    reset_url = f"{settings.frontend_url}/reset-password?token={reset_token}"
+    query = urlencode({"token": reset_token})
+    reset_url = f"{settings.frontend_url.rstrip('/')}/reset-password?{query}"
 
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -47,25 +48,30 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
         </p>
     </div>
     """
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Restablecimiento de contraseña - Universidad Digital"
-    msg["From"] = settings.mail_from
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_content, "html"))
+    text_content = (
+        f"Hola {full_name},\n\n"
+        "Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n"
+        f"Usa este enlace para crear una nueva contraseña: {reset_url}\n\n"
+        f"Este enlace expira en {settings.password_reset_expiration_minutes} minutos.\n"
+        "Si no solicitaste este cambio, puedes ignorar este email."
+    )
 
     try:
-        if settings.mail_port == 465:
-            smtp_ctx: smtplib.SMTP = smtplib.SMTP_SSL(settings.mail_host, settings.mail_port, timeout=SMTP_TIMEOUT)
-        else:
-            smtp_ctx = smtplib.SMTP(settings.mail_host, settings.mail_port, timeout=SMTP_TIMEOUT)
-
-        with smtp_ctx as smtp:
-            if settings.mail_port != 465:
-                smtp.starttls()
-            smtp.login(settings.mail_user, settings.mail_pass)
-            smtp.sendmail(settings.mail_from, to_email, msg.as_string())
-        logger.info("Email de restablecimiento enviado a %s via SMTP", to_email)
-    except Exception:
+        mail = mt.Mail(
+            sender=mt.Address(email=settings.mail_from, name="Universidad Digital"),
+            to=[mt.Address(email=to_email, name=full_name)],
+            subject="Restablecimiento de contraseña - Universidad Digital",
+            text=text_content,
+            html=html_content,
+            category="Password Reset",
+        )
+        client = mt.MailtrapClient(
+            token=settings.mailtrap_api_token,
+            sandbox=True,
+            inbox_id=settings.mailtrap_inbox_id,
+        )
+        client.send(mail)
+        logger.info("Email de restablecimiento enviado a %s via Mailtrap Sandbox API", to_email)
+    except Exception as exc:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)
-        raise
+        raise EmailDeliveryError("No se pudo enviar el email de restablecimiento.") from exc
