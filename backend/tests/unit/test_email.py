@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.core.email import send_password_reset_email
+from app.core.email import SMTP_TIMEOUT, send_password_reset_email
 
 
 @pytest.mark.unit
@@ -47,7 +47,7 @@ def test_send_password_reset_email_envia_via_smtp() -> None:
 
         send_password_reset_email("dest@example.com", "María", "abc123")
 
-    mock_smtp_cls.assert_called_once_with("sandbox.smtp.mailtrap.io", 2525)
+    mock_smtp_cls.assert_called_once_with("sandbox.smtp.mailtrap.io", 2525, timeout=SMTP_TIMEOUT)
     mock_smtp_instance.starttls.assert_called_once()
     mock_smtp_instance.login.assert_called_once_with("smtp_user", "smtp_pass")
 
@@ -82,7 +82,7 @@ def test_send_password_reset_email_puerto_465_usa_smtp_ssl() -> None:
 
         send_password_reset_email("dest@example.com", "Juan", "tok456")
 
-    mock_smtp_ssl_cls.assert_called_once_with("smtp.example.com", 465)
+    mock_smtp_ssl_cls.assert_called_once_with("smtp.example.com", 465, timeout=SMTP_TIMEOUT)
     mock_smtp_cls.assert_not_called()
     mock_smtp_instance.login.assert_called_once_with("smtp_user", "smtp_pass")
     mock_smtp_instance.starttls.assert_not_called()

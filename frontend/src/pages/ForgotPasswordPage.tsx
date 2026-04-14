@@ -33,8 +33,13 @@ export function ForgotPasswordPage() {
     try {
       await forgotPassword(sanitizeText(values.email));
       setSent(true);
-    } catch {
-      setError("Ocurrió un error. Intenta de nuevo más tarde.");
+    } catch (err: unknown) {
+      const axiosErr = err as { code?: string } | null;
+      if (axiosErr?.code === "ERR_CANCELED") {
+        setError("La solicitud tardó demasiado. Intenta de nuevo más tarde.");
+      } else {
+        setError("No se pudo enviar el correo. Intenta de nuevo más tarde.");
+      }
     }
   };
 
