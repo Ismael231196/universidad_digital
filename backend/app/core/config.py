@@ -30,6 +30,12 @@ class Settings(BaseSettings):
 
     cors_origins: str | list[str] = Field(default_factory=list, validation_alias="APP_CORS_ORIGINS")
 
+    sendgrid_api_key: str | None = Field(default=None, validation_alias="SENDGRID_API_KEY")
+    sendgrid_from_email: str = Field(default="no-reply@universidad-digital.com", validation_alias="SENDGRID_FROM_EMAIL")
+    frontend_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_URL")
+
+    password_reset_expiration_minutes: int = 30
+
     auto_create_tables: bool = True
 
     @property

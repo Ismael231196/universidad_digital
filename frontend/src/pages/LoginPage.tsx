@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AuthLayout } from "../layouts/AuthLayout";
@@ -66,6 +66,9 @@ export function LoginPage() {
           {isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
       </form>
+      <p style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.875rem" }}>
+        <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+      </p>
     </AuthLayout>
   );
 }

@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "../pages/LoginPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { AccessDeniedPage } from "../pages/AccessDeniedPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { ServerErrorPage } from "../pages/ServerErrorPage";
@@ -40,6 +42,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/denied" element={<AccessDeniedPage />} />
       <Route path="/500" element={<ServerErrorPage />} />
 
