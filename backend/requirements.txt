@@ -20,7 +20,6 @@ httpx==0.26.0
 idna==3.6
 iniconfig==2.0.0
 Mako==1.3.2
-mailtrap==2.5.0
 MarkupSafe==2.1.5
 packaging==23.2
 passlib==1.7.4

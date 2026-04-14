@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 from urllib.parse import urlencode
 
-import mailtrap as mt
+import httpx
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+MAILTRAP_SANDBOX_BASE_URL = "https://sandbox.api.mailtrap.io"
 
 
 class EmailDeliveryError(RuntimeError):
@@ -14,11 +16,9 @@ class EmailDeliveryError(RuntimeError):
 
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
-    """Envía el email de restablecimiento de contraseña vía Mailtrap Sandbox API."""
+    """Envía el email de restablecimiento de contraseña vía Mailtrap Sandbox API (HTTP)."""
     if not settings.mailtrap_api_token or not settings.mailtrap_inbox_id or not settings.mail_from:
-        logger.error(
-            "MAILTRAP_API_TOKEN / MAILTRAP_INBOX_ID / MAIL_FROM no configurados."
-        )
+        logger.error("MAILTRAP_API_TOKEN / MAILTRAP_INBOX_ID / MAIL_FROM no configurados.")
         raise EmailDeliveryError("Configuración de email incompleta.")
 
     query = urlencode({"token": reset_token})
@@ -48,6 +48,7 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
         </p>
     </div>
     """
+
     text_content = (
         f"Hola {full_name},\n\n"
         "Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n"
@@ -56,21 +57,23 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
         "Si no solicitaste este cambio, puedes ignorar este email."
     )
 
+    payload = {
+        "from": {"email": settings.mail_from, "name": "Universidad Digital"},
+        "to": [{"email": to_email, "name": full_name}],
+        "subject": "Restablecimiento de contraseña - Universidad Digital",
+        "text": text_content,
+        "html": html_content,
+        "category": "Password Reset",
+    }
+
+    url = f"{MAILTRAP_SANDBOX_BASE_URL}/api/send/{int(settings.mailtrap_inbox_id)}"
+    headers = {"Authorization": f"Bearer {settings.mailtrap_api_token}"}
+
     try:
-        mail = mt.Mail(
-            sender=mt.Address(email=settings.mail_from, name="Universidad Digital"),
-            to=[mt.Address(email=to_email, name=full_name)],
-            subject="Restablecimiento de contraseña - Universidad Digital",
-            text=text_content,
-            html=html_content,
-            category="Password Reset",
-        )
-        client = mt.MailtrapClient(
-            token=settings.mailtrap_api_token,
-            sandbox=True,
-            inbox_id=settings.mailtrap_inbox_id,
-        )
-        client.send(mail)
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+
         logger.info("Email de restablecimiento enviado a %s via Mailtrap Sandbox API", to_email)
     except Exception as exc:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)
