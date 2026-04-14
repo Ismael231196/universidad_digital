@@ -18,16 +18,16 @@ export function Table<T>({ caption, columns, data }: TableProps<T>) {
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
-            {columns.map((column) => (
-              <th key={column.header}>{column.header}</th>
+            {columns.map((column, columnIndex) => (
+              <th key={`column-${columnIndex}`}>{column.header}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.map((row, index) => (
             <tr key={index}>
-              {columns.map((column) => (
-                <td key={column.header}>{column.render(row)}</td>
+              {columns.map((column, columnIndex) => (
+                <td key={`cell-${columnIndex}`}>{column.render(row)}</td>
               ))}
             </tr>
           ))}
