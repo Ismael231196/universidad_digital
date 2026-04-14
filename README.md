@@ -19,10 +19,10 @@ backend/app/
 
 Cada dominio incluye `models.py`, `schemas.py`, `services.py` y `routes.py`.
 
-### Restablecimiento de contraseña (Mailtrap)
+### Restablecimiento de contraseña (Mailtrap Email API)
 
 El proyecto incluye un flujo completo de restablecimiento de contraseña que envía emails
-a través de **Mailtrap** (ideal para pruebas en local sin enviar correos reales).
+a través de **Mailtrap Email API** (ideal para pruebas en local sin enviar correos reales).
 
 #### Endpoints disponibles
 
@@ -36,20 +36,18 @@ a través de **Mailtrap** (ideal para pruebas en local sin enviar correos reales
 Copia `backend/.env.example` como `backend/.env` y rellena los valores de Mailtrap:
 
 ```env
-MAIL_HOST=sandbox.smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USER=<tu_mailtrap_user>
-MAIL_PASS=<tu_mailtrap_pass>
+MAILTRAP_API_TOKEN=<tu_mailtrap_api_token>
+MAILTRAP_INBOX_ID=<tu_mailtrap_inbox_id>
 MAIL_FROM=no-reply@universidad-digital.com
 APP_BASE_URL=http://localhost:3000   # URL del frontend para el enlace de reset
 ```
 
-#### Cómo obtener las credenciales de Mailtrap
+#### Cómo obtener las credenciales de Mailtrap Email API
 
 1. Regístrate en <https://mailtrap.io> (plan gratuito disponible).
-2. Ve a **Email Testing → tu Inbox → SMTP Settings**.
-3. En la sección **"Integrations"**, copia el **Username** y **Password**.
-4. Pégalos en tu `.env` como `MAIL_USER` y `MAIL_PASS`.
+2. Ve a **Email Testing → tu Inbox → API** (pestaña de integraciones).
+3. Copia el **API Token** y el **Inbox ID**.
+4. Pégalos en tu `.env` como `MAILTRAP_API_TOKEN` y `MAILTRAP_INBOX_ID`.
 
 #### Cómo probar el flujo localmente
 
