@@ -1,20 +1,22 @@
 from __future__ import annotations
 
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
+import httpx
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+_MAILTRAP_SEND_URL = "https://sandbox.api.mailtrap.io/api/send/{inbox_id}"
+_HTTP_TIMEOUT = 15
+
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
-    """Envía el email de restablecimiento de contraseña via Mailtrap SMTP."""
-    if not settings.mail_user or not settings.mail_pass:
+    """Envía el email de restablecimiento de contraseña via Mailtrap Email API."""
+    if not settings.mailtrap_api_token or not settings.mailtrap_inbox_id:
         logger.warning(
-            "MAIL_USER / MAIL_PASS no configurados. "
+            "MAILTRAP_API_TOKEN / MAILTRAP_INBOX_ID no configurados. "
             "Email de restablecimiento no enviado."
         )
         return
@@ -46,19 +48,23 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
     </div>
     """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Restablecimiento de contraseña - Universidad Digital"
-    msg["From"] = settings.mail_from
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_content, "html"))
+    url = _MAILTRAP_SEND_URL.format(inbox_id=settings.mailtrap_inbox_id)
+    headers = {
+        "Authorization": f"Bearer {settings.mailtrap_api_token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "from": {"email": settings.mail_from},
+        "to": [{"email": to_email}],
+        "subject": "Restablecimiento de contraseña - Universidad Digital",
+        "html": html_content,
+    }
 
     try:
-        with smtplib.SMTP(settings.mail_host, settings.mail_port) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(settings.mail_user, settings.mail_pass)
-            smtp.sendmail(settings.mail_from, to_email, msg.as_string())
-        logger.info("Email de restablecimiento enviado a %s via Mailtrap SMTP", to_email)
+        with httpx.Client(timeout=_HTTP_TIMEOUT) as client:
+            response = client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+        logger.info("Email de restablecimiento enviado a %s via Mailtrap Email API", to_email)
     except Exception:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)
         raise
