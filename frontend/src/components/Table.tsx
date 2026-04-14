@@ -19,15 +19,15 @@ export function Table<T>({ caption, columns, data }: TableProps<T>) {
         <thead>
           <tr>
             {columns.map((column, columnIndex) => (
-              <th key={`${column.header}-${columnIndex}`}>{column.header}</th>
+              <th key={columnIndex}>{column.header}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {data.map((row, index) => (
-            <tr key={index}>
+          {data.map((row, rowIndex) => (
+            <tr key={rowIndex}>
               {columns.map((column, columnIndex) => (
-                <td key={`${index}-${columnIndex}`}>{column.render(row)}</td>
+                <td key={`${rowIndex}-${columnIndex}`}>{column.render(row)}</td>
               ))}
             </tr>
           ))}
