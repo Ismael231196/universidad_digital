@@ -1,83 +1,106 @@
 from __future__ import annotations
 
+import email as email_lib
 import logging
+import smtplib
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.core.email import _HTTP_TIMEOUT, _MAILTRAP_SEND_URL, send_password_reset_email
+from app.core.email import send_password_reset_email
 
 
 @pytest.mark.unit
 def test_send_password_reset_email_sin_credenciales(caplog: pytest.LogCaptureFixture) -> None:
-    """Si las credenciales API no están configuradas, se loguea warning y no se envía nada."""
+    """Si las credenciales SMTP no están configuradas, se loguea warning y no se envía nada."""
     with (
         patch("app.core.email.settings") as mock_settings,
-        patch("app.core.email.httpx.Client") as mock_client_cls,
+        patch("app.core.email.smtplib.SMTP") as mock_smtp_cls,
     ):
-        mock_settings.mailtrap_api_token = None
-        mock_settings.mailtrap_inbox_id = None
+        mock_settings.mail_user = None
+        mock_settings.mail_pass = None
 
         with caplog.at_level(logging.WARNING, logger="app.core.email"):
             send_password_reset_email("dest@example.com", "Usuario", "token123")
 
-        mock_client_cls.assert_not_called()
-        assert "MAILTRAP_API_TOKEN" in caplog.text
+        mock_smtp_cls.assert_not_called()
+        assert "MAIL_USER" in caplog.text
 
 
 @pytest.mark.unit
-def test_send_password_reset_email_envia_via_api() -> None:
-    """Con credenciales configuradas, hace POST a Mailtrap Email API con el token y la URL."""
-    mock_response = MagicMock()
-    mock_response.raise_for_status.return_value = None
-    mock_http_client = MagicMock()
-    mock_http_client.post.return_value = mock_response
-    mock_client_cls = MagicMock(return_value=_make_context_manager(mock_http_client))
+def test_send_password_reset_email_envia_via_smtp() -> None:
+    """Con credenciales SMTP configuradas, conecta, autentica y envía el mensaje."""
+    mock_smtp_instance = MagicMock()
+    mock_smtp_cls = MagicMock(return_value=_make_context_manager(mock_smtp_instance))
 
     with (
         patch("app.core.email.settings") as mock_settings,
-        patch("app.core.email.httpx.Client", mock_client_cls),
+        patch("app.core.email.smtplib.SMTP", mock_smtp_cls),
     ):
-        mock_settings.mailtrap_api_token = "test_api_token"
-        mock_settings.mailtrap_inbox_id = "123456"
+        mock_settings.mail_user = "smtp_user"
+        mock_settings.mail_pass = "smtp_pass"
+        mock_settings.mail_host = "sandbox.smtp.mailtrap.io"
+        mock_settings.mail_port = 2525
         mock_settings.mail_from = "noreply@universidad.com"
         mock_settings.frontend_url = "https://app.universidad.com"
         mock_settings.password_reset_expiration_minutes = 30
 
         send_password_reset_email("dest@example.com", "María", "abc123")
 
-    mock_client_cls.assert_called_once_with(timeout=_HTTP_TIMEOUT)
-    mock_http_client.post.assert_called_once()
+    mock_smtp_cls.assert_called_once_with("sandbox.smtp.mailtrap.io", 2525)
+    mock_smtp_instance.starttls.assert_called_once()
+    mock_smtp_instance.login.assert_called_once_with("smtp_user", "smtp_pass")
 
-    call_kwargs = mock_http_client.post.call_args
-    url = call_kwargs[0][0]
-    expected_url = _MAILTRAP_SEND_URL.format(inbox_id="123456")
-    assert url == expected_url
+    sendmail_call = mock_smtp_instance.sendmail.call_args
+    assert sendmail_call[0][0] == "noreply@universidad.com"
+    assert sendmail_call[0][1] == "dest@example.com"
+    raw_message = sendmail_call[0][2]
+    parsed = email_lib.message_from_string(raw_message)
+    html_body = _get_html_payload(parsed)
+    assert "abc123" in html_body
+    assert "https://app.universidad.com/reset-password" in html_body
 
-    headers = call_kwargs[1]["headers"]
-    assert headers["Authorization"] == "Bearer test_api_token"
 
-    body = call_kwargs[1]["json"]
-    assert body["from"]["email"] == "noreply@universidad.com"
-    assert body["to"][0]["email"] == "dest@example.com"
-    assert "abc123" in body["html"]
-    assert "https://app.universidad.com/reset-password" in body["html"]
-    mock_response.raise_for_status.assert_called_once()
+@pytest.mark.unit
+def test_send_password_reset_email_puerto_465_usa_smtp_ssl() -> None:
+    """Cuando mail_port es 465, usa SMTP_SSL (sin STARTTLS)."""
+    mock_smtp_instance = MagicMock()
+    mock_smtp_ssl_cls = MagicMock(return_value=_make_context_manager(mock_smtp_instance))
+
+    with (
+        patch("app.core.email.settings") as mock_settings,
+        patch("app.core.email.smtplib.SMTP_SSL", mock_smtp_ssl_cls),
+        patch("app.core.email.smtplib.SMTP") as mock_smtp_cls,
+    ):
+        mock_settings.mail_user = "smtp_user"
+        mock_settings.mail_pass = "smtp_pass"
+        mock_settings.mail_host = "smtp.example.com"
+        mock_settings.mail_port = 465
+        mock_settings.mail_from = "noreply@universidad.com"
+        mock_settings.frontend_url = "https://app.universidad.com"
+        mock_settings.password_reset_expiration_minutes = 30
+
+        send_password_reset_email("dest@example.com", "Juan", "tok456")
+
+    mock_smtp_ssl_cls.assert_called_once_with("smtp.example.com", 465)
+    mock_smtp_cls.assert_not_called()
+    mock_smtp_instance.login.assert_called_once_with("smtp_user", "smtp_pass")
+    mock_smtp_instance.starttls.assert_not_called()
 
 
 @pytest.mark.unit
 def test_send_password_reset_email_relanza_excepcion() -> None:
-    """Si la llamada HTTP falla, la excepción se re-lanza."""
-    mock_http_client = MagicMock()
-    mock_http_client.post.side_effect = OSError("connection refused")
-    mock_client_cls = MagicMock(return_value=_make_context_manager(mock_http_client))
+    """Si la conexión SMTP falla, la excepción se re-lanza."""
+    mock_smtp_cls = MagicMock(side_effect=OSError("connection refused"))
 
     with (
         patch("app.core.email.settings") as mock_settings,
-        patch("app.core.email.httpx.Client", mock_client_cls),
+        patch("app.core.email.smtplib.SMTP", mock_smtp_cls),
     ):
-        mock_settings.mailtrap_api_token = "test_api_token"
-        mock_settings.mailtrap_inbox_id = "123456"
+        mock_settings.mail_user = "smtp_user"
+        mock_settings.mail_pass = "smtp_pass"
+        mock_settings.mail_host = "sandbox.smtp.mailtrap.io"
+        mock_settings.mail_port = 2525
         mock_settings.mail_from = "noreply@universidad.com"
         mock_settings.frontend_url = "https://app.universidad.com"
         mock_settings.password_reset_expiration_minutes = 30
@@ -103,3 +126,15 @@ class _CtxManager:
 
 def _make_context_manager(instance: MagicMock) -> _CtxManager:
     return _CtxManager(instance)
+
+
+def _get_html_payload(msg: email_lib.message.Message) -> str:
+    """Extract and decode the HTML payload from a (possibly multipart) MIME message."""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/html":
+                return part.get_payload(decode=True).decode("utf-8")
+    raw = msg.get_payload(decode=True)
+    if raw is not None:
+        return raw.decode("utf-8")
+    return str(msg.get_payload())
