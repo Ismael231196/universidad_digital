@@ -2,6 +2,136 @@
 
 API y frontend para gestión académica universitaria con FastAPI y React.
 
+## Mostrar Arquitectura
+
+### Arquitectura general del sistema
+
+```mermaid
+flowchart LR
+   U[Usuario Web] --> FE[Frontend React + Vite]
+   FE -->|HTTPS REST + JWT/Cookies| BE[Backend FastAPI]
+   BE -->|SQLAlchemy + Alembic| DB[(PostgreSQL / SQLite test)]
+
+   FE -->|Build y deploy| VERCEL[Vercel]
+   BE -->|Build Docker y deploy| RAILWAY[Railway]
+
+   GH[GitHub Repository] -->|Push / PR| CI1[GitHub Actions backend-tests.yml]
+   GH -->|Push / PR| CI2[GitHub Actions frontend-tests.yml]
+   CI1 -->|Calidad + cobertura| GH
+   CI2 -->|Calidad + cobertura| GH
+```
+
+### Componentes y responsabilidades
+
+- Frontend: React + TypeScript + Vite, con rutas protegidas, RBAC y pruebas unitarias/integración/E2E.
+- Backend: FastAPI modular por dominios (auth, users, roles, subjects, periods, enrollments, grades).
+- Base de datos: SQLAlchemy ORM + migraciones Alembic (producción orientada a PostgreSQL, tests con SQLite).
+- CI/CD: GitHub Actions para calidad y cobertura en backend y frontend, despliegue en Railway (backend) y Vercel (frontend).
+
+### Estructura técnica (resumen)
+
+```
+backend/app/
+├── core/           # configuración, seguridad, base de datos, errores
+├── auth/           # login, logout, reset password
+├── users/          # gestión de usuarios
+├── roles/          # roles y permisos
+├── subjects/       # materias
+├── periods/        # periodos académicos
+├── enrollments/    # matrículas
+└── grades/         # calificaciones
+
+frontend/src/
+├── api/            # cliente HTTP y endpoints
+├── auth/           # estado de autenticación
+├── components/     # componentes reutilizables
+├── context/        # estado global
+├── hooks/          # hooks personalizados
+├── layouts/        # layouts por vista
+├── pages/          # pantallas por rol/caso
+├── routes/         # guardas y routing
+├── services/       # lógica de negocio del frontend
+├── styles/         # estilos globales
+└── utils/          # utilidades
+```
+
+## Compartir Repositorio
+
+### Enlace GitHub
+
+- Repositorio: https://github.com/Ismael231196/universidad_digital
+
+### Estrategia de ramas
+
+- Ramas principales: main (estable) y develop (integración).
+- Flujo recomendado: feature/* -> pull request -> develop -> main.
+- Evidencia en remoto: existen ramas de trabajo por tarea, por ejemplo copilot/*.
+
+### Documentación disponible
+
+- README.md: visión general, arquitectura, ejecución y testing.
+- README_TEST.md: guía de pruebas backend.
+- README_FRONTEND.md: arquitectura frontend y pruebas.
+- docs/TESTING-STRATEGY.md: estrategia de testing.
+- docs/TESTING-SECURITY.md: controles de seguridad y casos de prueba.
+- docs/TESTING-FRONTEND.md: detalle de pruebas frontend.
+- docs/TESTING-AUDIT-CHECKLIST.md: checklist de auditoría.
+
+## Demo y Aprendizajes
+
+### Demostración en vivo (guion recomendado)
+
+1. Levantar backend.
+
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+2. Levantar frontend.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+3. Mostrar flujo de negocio completo:
+- Login por rol (admin/docente/estudiante).
+- CRUD de usuarios/roles (admin).
+- Matrícula y consulta de materias.
+- Registro y visualización de calificaciones.
+- Forgot password y reset password con Mailtrap.
+
+4. Mostrar calidad técnica en vivo:
+
+```bash
+# Backend
+cd backend
+pytest -m unit
+pytest -m integration
+
+# Frontend
+cd frontend
+npm run test:unit
+npm run test:integration
+```
+
+### Retos superados
+
+- Seguridad de autenticación: endurecimiento de JWT/cookies y manejo de errores sin fuga de información.
+- RBAC y ownership: validaciones por rol y acceso a datos propios en recursos académicos.
+- Flujo de recuperación de contraseña: integración estable con Mailtrap Sandbox API.
+- Calidad continua: pipelines separados de frontend/backend con cobertura y reportes.
+- Escalabilidad del código: arquitectura por dominios en backend y separación por capas en frontend.
+
+### Aprendizajes clave
+
+- Diseñar por dominios simplifica pruebas, mantenimiento y evolución funcional.
+- La combinación unit + integration + E2E reduce regresiones en cambios críticos.
+- Definir reglas de seguridad desde el diseño evita retrabajo en etapas tardías.
+- Documentación viva (README + docs/) acelera onboarding y colaboración del equipo.
+
 ### Backend
 
 Estructura por dominio (SRP):
