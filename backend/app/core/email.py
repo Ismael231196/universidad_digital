@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from app.core.config import settings
 
@@ -11,9 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
-    """Envía el email de restablecimiento de contraseña via SendGrid."""
-    if not settings.sendgrid_api_key:
-        logger.warning("SENDGRID_API_KEY no configurado. Email de restablecimiento no enviado.")
+    """Envía el email de restablecimiento de contraseña via Brevo SMTP."""
+    if not settings.brevo_smtp_user or not settings.brevo_smtp_pass:
+        logger.warning(
+            "BREVO_SMTP_USER / BREVO_SMTP_PASS no configurados. "
+            "Email de restablecimiento no enviado."
+        )
         return
 
     reset_url = f"{settings.frontend_url}/reset-password?token={reset_token}"
@@ -43,16 +46,19 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
     </div>
     """
 
-    message = Mail(
-        from_email=settings.sendgrid_from_email,
-        to_emails=to_email,
-        subject="Restablecimiento de contraseña - Universidad Digital",
-        html_content=html_content,
-    )
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Restablecimiento de contraseña - Universidad Digital"
+    msg["From"] = settings.email_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(html_content, "html"))
 
     try:
-        sg = SendGridAPIClient(settings.sendgrid_api_key)
-        sg.send(message)
+        with smtplib.SMTP(settings.brevo_smtp_host, settings.brevo_smtp_port) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(settings.brevo_smtp_user, settings.brevo_smtp_pass)
+            smtp.sendmail(settings.email_from, to_email, msg.as_string())
+        logger.info("Email de restablecimiento enviado a %s via Brevo SMTP", to_email)
     except Exception:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)
         raise

@@ -52,19 +52,34 @@ Roles base: `Administrador`, `Docente`, `Estudiante`.
 
 ### Variables de entorno (.env)
 
-Prefijo `APP_`:
+Copia `backend/.env.example` a `backend/.env` y rellena los valores. Las principales:
+
+**Aplicación** (prefijo `APP_`):
 
 ```
+APP_ENV=development
 APP_DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/universidad
-APP_JWT_SECRET=change_me
-APP_JWT_ALGORITHM=HS256
+APP_JWT_SECRET=secreto_de_al_menos_32_caracteres
 APP_JWT_EXPIRATION=60
-APP_COOKIE_NAME=access_token
 APP_COOKIE_SECURE=false
 APP_COOKIE_SAMESITE=lax
 APP_CORS_ORIGINS=http://localhost:3000
-APP_AUTO_CREATE_TABLES=true
 ```
+
+**Email con Brevo SMTP** (sin prefijo `APP_`):
+
+```
+FRONTEND_URL=http://localhost:3000
+BREVO_SMTP_HOST=smtp-relay.brevo.com
+BREVO_SMTP_PORT=587
+BREVO_SMTP_USER=tu_login@smtp-brevo.com
+BREVO_SMTP_PASS=tu_contraseña_smtp
+EMAIL_FROM=noreply@tudominio.com
+```
+
+> **Nota:** Brevo (antes Sendinblue) y SendGrid son proveedores distintos.
+> Las credenciales no son intercambiables.
+> Las variables `SENDGRID_API_KEY` y `SENDGRID_FROM_EMAIL` ya no se usan.
 
 ### Cómo levantar el backend
 
