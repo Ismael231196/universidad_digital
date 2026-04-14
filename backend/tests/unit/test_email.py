@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import email as email_lib
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -17,8 +19,6 @@ def test_send_password_reset_email_sin_credenciales(caplog: pytest.LogCaptureFix
         mock_settings.brevo_smtp_user = None
         mock_settings.brevo_smtp_pass = None
 
-        import logging
-
         with caplog.at_level(logging.WARNING, logger="app.core.email"):
             send_password_reset_email("dest@example.com", "Usuario", "token123")
 
@@ -30,7 +30,7 @@ def test_send_password_reset_email_sin_credenciales(caplog: pytest.LogCaptureFix
 def test_send_password_reset_email_envia_via_smtp() -> None:
     """Con credenciales configuradas, se conecta al servidor SMTP y envía el email."""
     mock_smtp_instance = MagicMock()
-    mock_smtp_cls = MagicMock(return_value=__enter__ctx(mock_smtp_instance))
+    mock_smtp_cls = MagicMock(return_value=_make_context_manager(mock_smtp_instance))
 
     with (
         patch("app.core.email.settings") as mock_settings,
@@ -53,9 +53,7 @@ def test_send_password_reset_email_envia_via_smtp() -> None:
     mock_smtp_instance.sendmail.assert_called_once()
 
     # Verificar que el enlace contiene el token y la URL del frontend
-    call_args = mock_smtp_instance.sendmail.call_args
-    raw_email: str = call_args[0][2]
-    import email as email_lib
+    raw_email: str = mock_smtp_instance.sendmail.call_args[0][2]
     parsed = email_lib.message_from_string(raw_email)
     body = ""
     if parsed.is_multipart():
@@ -75,7 +73,7 @@ def test_send_password_reset_email_relanza_excepcion() -> None:
     """Si el servidor SMTP falla, la excepción se re-lanza."""
     mock_smtp_instance = MagicMock()
     mock_smtp_instance.sendmail.side_effect = OSError("connection refused")
-    mock_smtp_cls = MagicMock(return_value=__enter__ctx(mock_smtp_instance))
+    mock_smtp_cls = MagicMock(return_value=_make_context_manager(mock_smtp_instance))
 
     with (
         patch("app.core.email.settings") as mock_settings,
@@ -108,5 +106,5 @@ class _CtxManager:
         pass
 
 
-def __enter__ctx(instance: MagicMock) -> _CtxManager:
+def _make_context_manager(instance: MagicMock) -> _CtxManager:
     return _CtxManager(instance)
