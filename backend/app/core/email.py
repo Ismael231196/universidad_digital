@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
-    """Envía el email de restablecimiento de contraseña via Brevo SMTP."""
-    if not settings.brevo_smtp_user or not settings.brevo_smtp_pass:
+    """Envía el email de restablecimiento de contraseña via Mailtrap SMTP."""
+    if not settings.mail_user or not settings.mail_pass:
         logger.warning(
-            "BREVO_SMTP_USER / BREVO_SMTP_PASS no configurados. "
+            "MAIL_USER / MAIL_PASS no configurados. "
             "Email de restablecimiento no enviado."
         )
         return
@@ -48,17 +48,17 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Restablecimiento de contraseña - Universidad Digital"
-    msg["From"] = settings.email_from
+    msg["From"] = settings.mail_from
     msg["To"] = to_email
     msg.attach(MIMEText(html_content, "html"))
 
     try:
-        with smtplib.SMTP(settings.brevo_smtp_host, settings.brevo_smtp_port) as smtp:
+        with smtplib.SMTP(settings.mail_host, settings.mail_port) as smtp:
             smtp.ehlo()
             smtp.starttls()
-            smtp.login(settings.brevo_smtp_user, settings.brevo_smtp_pass)
-            smtp.sendmail(settings.email_from, to_email, msg.as_string())
-        logger.info("Email de restablecimiento enviado a %s via Brevo SMTP", to_email)
+            smtp.login(settings.mail_user, settings.mail_pass)
+            smtp.sendmail(settings.mail_from, to_email, msg.as_string())
+        logger.info("Email de restablecimiento enviado a %s via Mailtrap SMTP", to_email)
     except Exception:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)
         raise

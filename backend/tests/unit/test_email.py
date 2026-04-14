@@ -16,14 +16,14 @@ def test_send_password_reset_email_sin_credenciales(caplog: pytest.LogCaptureFix
         patch("app.core.email.settings") as mock_settings,
         patch("app.core.email.smtplib.SMTP") as mock_smtp_cls,
     ):
-        mock_settings.brevo_smtp_user = None
-        mock_settings.brevo_smtp_pass = None
+        mock_settings.mail_user = None
+        mock_settings.mail_pass = None
 
         with caplog.at_level(logging.WARNING, logger="app.core.email"):
             send_password_reset_email("dest@example.com", "Usuario", "token123")
 
         mock_smtp_cls.assert_not_called()
-        assert "BREVO_SMTP_USER" in caplog.text
+        assert "MAIL_USER" in caplog.text
 
 
 @pytest.mark.unit
@@ -36,20 +36,20 @@ def test_send_password_reset_email_envia_via_smtp() -> None:
         patch("app.core.email.settings") as mock_settings,
         patch("app.core.email.smtplib.SMTP", mock_smtp_cls),
     ):
-        mock_settings.brevo_smtp_host = "smtp-relay.brevo.com"
-        mock_settings.brevo_smtp_port = 587
-        mock_settings.brevo_smtp_user = "user@smtp-brevo.com"
-        mock_settings.brevo_smtp_pass = "secret"
-        mock_settings.email_from = "noreply@universidad.com"
+        mock_settings.mail_host = "sandbox.smtp.mailtrap.io"
+        mock_settings.mail_port = 2525
+        mock_settings.mail_user = "test_user"
+        mock_settings.mail_pass = "test_pass"
+        mock_settings.mail_from = "noreply@universidad.com"
         mock_settings.frontend_url = "https://app.universidad.com"
         mock_settings.password_reset_expiration_minutes = 30
 
         send_password_reset_email("dest@example.com", "María", "abc123")
 
-    mock_smtp_cls.assert_called_once_with("smtp-relay.brevo.com", 587)
+    mock_smtp_cls.assert_called_once_with("sandbox.smtp.mailtrap.io", 2525)
     mock_smtp_instance.ehlo.assert_called_once()
     mock_smtp_instance.starttls.assert_called_once()
-    mock_smtp_instance.login.assert_called_once_with("user@smtp-brevo.com", "secret")
+    mock_smtp_instance.login.assert_called_once_with("test_user", "test_pass")
     mock_smtp_instance.sendmail.assert_called_once()
 
     # Verificar que el enlace contiene el token y la URL del frontend
@@ -79,11 +79,11 @@ def test_send_password_reset_email_relanza_excepcion() -> None:
         patch("app.core.email.settings") as mock_settings,
         patch("app.core.email.smtplib.SMTP", mock_smtp_cls),
     ):
-        mock_settings.brevo_smtp_host = "smtp-relay.brevo.com"
-        mock_settings.brevo_smtp_port = 587
-        mock_settings.brevo_smtp_user = "user@smtp-brevo.com"
-        mock_settings.brevo_smtp_pass = "secret"
-        mock_settings.email_from = "noreply@universidad.com"
+        mock_settings.mail_host = "sandbox.smtp.mailtrap.io"
+        mock_settings.mail_port = 2525
+        mock_settings.mail_user = "test_user"
+        mock_settings.mail_pass = "test_pass"
+        mock_settings.mail_from = "noreply@universidad.com"
         mock_settings.frontend_url = "https://app.universidad.com"
         mock_settings.password_reset_expiration_minutes = 30
 

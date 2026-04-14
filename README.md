@@ -19,6 +19,60 @@ backend/app/
 
 Cada dominio incluye `models.py`, `schemas.py`, `services.py` y `routes.py`.
 
+### Restablecimiento de contraseña (Mailtrap)
+
+El proyecto incluye un flujo completo de restablecimiento de contraseña que envía emails
+a través de **Mailtrap** (ideal para pruebas en local sin enviar correos reales).
+
+#### Endpoints disponibles
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/auth/forgot-password` | Solicita el restablecimiento. Responde siempre 204 (no revela si el email existe). |
+| `POST` | `/auth/reset-password` | Valida el token e introduce la nueva contraseña. |
+
+#### Variables de entorno necesarias
+
+Copia `backend/.env.example` como `backend/.env` y rellena los valores de Mailtrap:
+
+```env
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USER=<tu_mailtrap_user>
+MAIL_PASS=<tu_mailtrap_pass>
+MAIL_FROM=no-reply@universidad-digital.com
+APP_BASE_URL=http://localhost:3000   # URL del frontend para el enlace de reset
+```
+
+#### Cómo obtener las credenciales de Mailtrap
+
+1. Regístrate en <https://mailtrap.io> (plan gratuito disponible).
+2. Ve a **Email Testing → tu Inbox → SMTP Settings**.
+3. En la sección **"Integrations"**, copia el **Username** y **Password**.
+4. Pégalos en tu `.env` como `MAIL_USER` y `MAIL_PASS`.
+
+#### Cómo probar el flujo localmente
+
+```bash
+# 1. Arranca el backend
+cd backend
+uvicorn app.main:app --reload
+
+# 2. Solicita el restablecimiento
+curl -X POST http://localhost:8000/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "usuario@example.com"}'
+# → HTTP 204 (siempre, para no revelar si el email existe)
+
+# 3. Comprueba el email en Mailtrap → Email Testing → tu Inbox
+
+# 4. Copia el token del link y establece la nueva contraseña
+curl -X POST http://localhost:8000/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"token": "<token_del_email>", "new_password": "NuevaPassword123"}'
+# → HTTP 204 (éxito)
+```
+
 ### Endpoints principales
 
 ```

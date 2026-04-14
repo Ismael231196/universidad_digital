@@ -30,13 +30,13 @@ class Settings(BaseSettings):
 
     cors_origins: str | list[str] = Field(default_factory=list, validation_alias="APP_CORS_ORIGINS")
 
-    # Brevo (Sendinblue) SMTP settings
-    brevo_smtp_host: str = Field(default="smtp-relay.brevo.com", validation_alias="BREVO_SMTP_HOST")
-    brevo_smtp_port: int = Field(default=587, validation_alias="BREVO_SMTP_PORT")
-    brevo_smtp_user: str | None = Field(default=None, validation_alias="BREVO_SMTP_USER")
-    brevo_smtp_pass: str | None = Field(default=None, validation_alias="BREVO_SMTP_PASS")
-    email_from: str = Field(default="no-reply@universidad-digital.com", validation_alias="EMAIL_FROM")
-    frontend_url: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_URL")
+    # Mailtrap / SMTP email settings
+    mail_host: str = Field(default="sandbox.smtp.mailtrap.io", validation_alias=AliasChoices("MAIL_HOST"))
+    mail_port: int = Field(default=2525, validation_alias=AliasChoices("MAIL_PORT"))
+    mail_user: str | None = Field(default=None, validation_alias=AliasChoices("MAIL_USER"))
+    mail_pass: str | None = Field(default=None, validation_alias=AliasChoices("MAIL_PASS"))
+    mail_from: str = Field(default="no-reply@universidad-digital.com", validation_alias=AliasChoices("MAIL_FROM", "EMAIL_FROM"))
+    frontend_url: str = Field(default="http://localhost:3000", validation_alias=AliasChoices("APP_BASE_URL", "FRONTEND_URL"))
 
     password_reset_expiration_minutes: int = 30
 
