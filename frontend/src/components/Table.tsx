@@ -19,7 +19,7 @@ export function Table<T>({ caption, columns, data }: TableProps<T>) {
         <thead>
           <tr>
             {columns.map((column, columnIndex) => (
-              <th key={`column-${columnIndex}`}>{column.header}</th>
+              <th key={`${column.header}-${columnIndex}`}>{column.header}</th>
             ))}
           </tr>
         </thead>
@@ -27,7 +27,7 @@ export function Table<T>({ caption, columns, data }: TableProps<T>) {
           {data.map((row, index) => (
             <tr key={index}>
               {columns.map((column, columnIndex) => (
-                <td key={`cell-${columnIndex}`}>{column.render(row)}</td>
+                <td key={`${index}-${columnIndex}`}>{column.render(row)}</td>
               ))}
             </tr>
           ))}
