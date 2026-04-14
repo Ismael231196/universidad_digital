@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.models import RevokedToken
+from app.auth.models import PasswordResetToken, RevokedToken
 from app.core.config import settings
+from app.core.email import send_password_reset_email
 from app.core.errors import ForbiddenError, NotFoundError, UnauthorizedError
-from app.core.security import create_access_token, decode_access_token, is_jwt_error, verify_password
+from app.core.security import create_access_token, decode_access_token, hash_password, is_jwt_error, verify_password
 from app.users.models import User
 
 
@@ -102,3 +104,51 @@ def extract_token_data(token: str) -> tuple[str, datetime]:
         raise UnauthorizedError("Token inválido.")
     expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
     return jti, expires_at
+
+
+def request_password_reset(db: Session, email: str) -> None:
+    """Genera un token de restablecimiento y envía el email. No revela si el email existe."""
+    user = db.scalar(select(User).where(User.email == email.lower().strip()))
+    if not user or not user.is_active:
+        # Respuesta silenciosa para no revelar si el email existe
+        return
+
+    # Invalidar tokens anteriores no usados del mismo usuario
+    existing_tokens = db.scalars(
+        select(PasswordResetToken).where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used.is_(False),
+        )
+    ).all()
+    for t in existing_tokens:
+        t.used = True
+
+    token = secrets.token_urlsafe(64)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.password_reset_expiration_minutes)
+    reset_token = PasswordResetToken(user_id=user.id, token=token, expires_at=expires_at)
+    db.add(reset_token)
+    db.commit()
+
+    send_password_reset_email(user.email, user.full_name, token)
+
+
+def confirm_password_reset(db: Session, token: str, new_password: str) -> None:
+    """Valida el token y actualiza la contraseña del usuario."""
+    now = datetime.now(timezone.utc)
+    reset_token = db.scalar(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token == token,
+            PasswordResetToken.used.is_(False),
+            PasswordResetToken.expires_at > now,
+        )
+    )
+    if not reset_token:
+        raise UnauthorizedError("Token inválido o expirado.")
+
+    user = db.get(User, reset_token.user_id)
+    if not user or not user.is_active:
+        raise UnauthorizedError("Token inválido o expirado.")
+
+    user.hashed_password = hash_password(new_password)
+    reset_token.used = True
+    db.commit()
