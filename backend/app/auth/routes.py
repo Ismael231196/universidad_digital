@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import smtplib
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -73,7 +74,7 @@ def forgot_password_endpoint(
     """
     try:
         request_password_reset(db, payload.email)
-    except Exception:
+    except (OSError, smtplib.SMTPException):
         logger.exception("Error al procesar solicitud de restablecimiento de contraseña")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
