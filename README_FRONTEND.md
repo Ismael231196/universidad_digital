@@ -229,3 +229,12 @@ Protegidas:
 - `/admin` y subsecciones
 - `/teacher` y subsecciones
 - `/student` y subsecciones
+
+### 11. Verificación responsive (móvil)
+
+- Abre Chrome DevTools (`F12` → Toggle Device Toolbar) y prueba anchos de **320px, 375px y 768px**.
+- Verifica especialmente `/login`, dashboards y páginas con tablas (`/admin/*`, `/teacher/grades`, `/student/*`).
+- Si alguna vista vuelve a desbordar horizontalmente, revisa primero:
+  - contenedores con ancho fijo (`width/min-width`),
+  - elementos `100vh` en móvil (preferir `100dvh`),
+  - tablas sin contenedor con `overflow-x: auto`.
