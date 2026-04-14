@@ -54,14 +54,15 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
 
     try:
         if settings.mail_port == 465:
-            with smtplib.SMTP_SSL(settings.mail_host, settings.mail_port) as smtp:
-                smtp.login(settings.mail_user, settings.mail_pass)
-                smtp.sendmail(settings.mail_from, to_email, msg.as_string())
+            smtp_ctx: smtplib.SMTP = smtplib.SMTP_SSL(settings.mail_host, settings.mail_port)
         else:
-            with smtplib.SMTP(settings.mail_host, settings.mail_port) as smtp:
+            smtp_ctx = smtplib.SMTP(settings.mail_host, settings.mail_port)
+
+        with smtp_ctx as smtp:
+            if settings.mail_port != 465:
                 smtp.starttls()
-                smtp.login(settings.mail_user, settings.mail_pass)
-                smtp.sendmail(settings.mail_from, to_email, msg.as_string())
+            smtp.login(settings.mail_user, settings.mail_pass)
+            smtp.sendmail(settings.mail_from, to_email, msg.as_string())
         logger.info("Email de restablecimiento enviado a %s via SMTP", to_email)
     except Exception:
         logger.exception("Error al enviar email de restablecimiento a %s", to_email)

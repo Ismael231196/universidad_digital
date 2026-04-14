@@ -134,7 +134,8 @@ def _get_html_payload(msg: email_lib.message.Message) -> str:
         for part in msg.walk():
             if part.get_content_type() == "text/html":
                 return part.get_payload(decode=True).decode("utf-8")
+        raise ValueError("No text/html part found in multipart message")
     raw = msg.get_payload(decode=True)
-    if raw is not None:
-        return raw.decode("utf-8")
-    return str(msg.get_payload())
+    if raw is None:
+        raise ValueError("Could not decode message payload")
+    return raw.decode("utf-8")
