@@ -35,5 +35,14 @@ describe("Table", () => {
     const caption = screen.getByText("Alumnos");
     expect(caption.tagName.toLowerCase()).toBe("caption");
   });
-});
 
+  it("debe envolver la tabla en un contenedor responsive", () => {
+    // Arrange & Act
+    const { container } = render(<Table caption="Alumnos" columns={columns} data={data} />);
+
+    // Assert
+    const wrapper = container.querySelector(".table-responsive");
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper?.querySelector("table.table")).toBeInTheDocument();
+  });
+});

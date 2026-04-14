@@ -48,6 +48,14 @@ body {
   line-height: 1.5;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -98,6 +106,13 @@ svg {
 .table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table th,
@@ -296,6 +311,7 @@ svg {
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-app);
 }
 
@@ -372,6 +388,7 @@ svg {
   left: 0;
   width: var(--sidebar-width);
   height: 100vh;
+  height: 100dvh;
   background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
   color: white;
   display: flex;
@@ -626,6 +643,7 @@ svg {
    ===================== */
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
 }
 
@@ -747,6 +765,19 @@ svg {
    Responsive - Tablet
    ===================== */
 @media (max-width: 768px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .header-user-name {
+    display: none;
+  }
+
+  .header-user .button {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
   .hamburger-btn {
     display: flex;
     align-items: center;
@@ -803,6 +834,24 @@ svg {
     padding: 16px;
   }
 
+  .header {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .header-user {
+    gap: 6px;
+  }
+
+  .header-user .avatar {
+    display: none;
+  }
+
+  .header-user .button {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -816,7 +865,17 @@ svg {
     font-size: 18px;
   }
 
+  .welcome-card-subtitle {
+    font-size: 13px;
+  }
+
   .login-right {
     padding: 24px;
+  }
+}
+
+@media (max-width: 360px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }

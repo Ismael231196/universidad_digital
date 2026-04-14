@@ -5,7 +5,7 @@ export function NotFoundPage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
