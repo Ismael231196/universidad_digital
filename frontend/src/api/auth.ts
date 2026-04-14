@@ -33,8 +33,14 @@ export async function getMe() {
   return data;
 }
 
-export async function forgotPassword(email: string) {
-  await http.post("/auth/forgot-password", { email });
+export async function forgotPassword(email: string): Promise<void> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  try {
+    await http.post("/auth/forgot-password", { email }, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function resetPassword(token: string, new_password: string) {

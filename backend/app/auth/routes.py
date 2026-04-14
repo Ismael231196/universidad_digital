@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, Response, status
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.schemas import ForgotPasswordRequest, LoginRequest, ResetPasswordRequest, TokenResponse
@@ -18,6 +20,8 @@ from app.users.schemas import UserResponse
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -64,8 +68,17 @@ def me_endpoint(user=Depends(get_current_user_dep)) -> UserResponse:
 def forgot_password_endpoint(
     payload: ForgotPasswordRequest, response: Response, db: Session = Depends(get_db)
 ) -> Response:
-    """Solicita el restablecimiento de contraseña. Siempre responde 204 para no revelar emails."""
-    request_password_reset(db, payload.email)
+    """Solicita el restablecimiento de contraseña. Siempre responde 204 para no revelar emails.
+    Si el envío SMTP falla responde 502 para que el cliente muestre un error al usuario.
+    """
+    try:
+        request_password_reset(db, payload.email)
+    except Exception:
+        logger.exception("Error al procesar solicitud de restablecimiento de contraseña")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No se pudo enviar el correo de restablecimiento. Intenta más tarde.",
+        )
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 

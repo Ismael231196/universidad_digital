@@ -9,6 +9,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+SMTP_TIMEOUT = 10  # seconds – evita requests colgadas por SMTP lento/inaccesible
+
 
 def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -> None:
     """Envía el email de restablecimiento de contraseña via Mailtrap SMTP."""
@@ -54,9 +56,9 @@ def send_password_reset_email(to_email: str, full_name: str, reset_token: str) -
 
     try:
         if settings.mail_port == 465:
-            smtp_ctx: smtplib.SMTP = smtplib.SMTP_SSL(settings.mail_host, settings.mail_port)
+            smtp_ctx: smtplib.SMTP = smtplib.SMTP_SSL(settings.mail_host, settings.mail_port, timeout=SMTP_TIMEOUT)
         else:
-            smtp_ctx = smtplib.SMTP(settings.mail_host, settings.mail_port)
+            smtp_ctx = smtplib.SMTP(settings.mail_host, settings.mail_port, timeout=SMTP_TIMEOUT)
 
         with smtp_ctx as smtp:
             if settings.mail_port != 465:

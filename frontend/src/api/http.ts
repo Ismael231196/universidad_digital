@@ -28,7 +28,10 @@ http.interceptors.response.use(
     if (error?.response?.status === 401 && onUnauthorized) {
       onUnauthorized();
     }
-    if (error?.response?.status >= 500) {
+    if (
+      error?.response?.status >= 500 &&
+      !error?.config?.url?.includes("/auth/forgot-password")
+    ) {
       window.location.assign("/500");
     }
     return Promise.reject(error);

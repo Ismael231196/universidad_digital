@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -85,4 +87,65 @@ def test_logout_revoca_token(api_client: TestClient, db_session: Session) -> Non
 
     # Assert
     assert logout_resp.status_code == 204
+
+
+@pytest.mark.integration
+def test_forgot_password_email_no_registrado_responde_204(api_client: TestClient) -> None:
+    """Para email no registrado el endpoint responde 204 sin revelar que no existe."""
+    response = api_client.post(
+        "/auth/forgot-password",
+        json={"email": "noexiste@example.com"},
+    )
+    assert response.status_code == 204
+
+
+@pytest.mark.integration
+def test_forgot_password_email_registrado_smtp_ok_responde_204(
+    api_client: TestClient, db_session: Session
+) -> None:
+    """Para email registrado y SMTP exitoso responde 204."""
+    user = User(
+        email="docente@example.com",
+        full_name="Docente",
+        hashed_password=hash_password("DocentePass123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    with patch("app.auth.services.send_password_reset_email") as mock_send:
+        response = api_client.post(
+            "/auth/forgot-password",
+            json={"email": "docente@example.com"},
+        )
+
+    assert response.status_code == 204
+    mock_send.assert_called_once()
+
+
+@pytest.mark.integration
+def test_forgot_password_smtp_falla_responde_502(
+    api_client: TestClient, db_session: Session
+) -> None:
+    """Si el envío SMTP falla, el endpoint responde 502 con mensaje seguro."""
+    user = User(
+        email="docente2@example.com",
+        full_name="Docente2",
+        hashed_password=hash_password("DocentePass123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    with patch(
+        "app.auth.services.send_password_reset_email",
+        side_effect=OSError("SMTP connection refused"),
+    ):
+        response = api_client.post(
+            "/auth/forgot-password",
+            json={"email": "docente2@example.com"},
+        )
+
+    assert response.status_code == 502
+    assert "correo" in response.json()["detail"].lower()
 
