@@ -28,12 +28,20 @@ def _build_enrollment_label(enrollment: Enrollment | None) -> str | None:
 
 def _enrich_grade(grade: Grade) -> Grade:
     enrollment = grade.enrollment
+    if not enrollment:
+        grade.enrollment_label = None
+        grade.student_full_name = None
+        grade.subject_name = None
+        grade.subject_code = None
+        grade.period_name = None
+        grade.period_code = None
+        return grade
     grade.enrollment_label = _build_enrollment_label(enrollment)
-    grade.student_full_name = enrollment.user.full_name if enrollment and enrollment.user else None
-    grade.subject_name = enrollment.subject.name if enrollment and enrollment.subject else None
-    grade.subject_code = enrollment.subject.code if enrollment and enrollment.subject else None
-    grade.period_name = enrollment.period.name if enrollment and enrollment.period else None
-    grade.period_code = enrollment.period.code if enrollment and enrollment.period else None
+    grade.student_full_name = enrollment.user.full_name if enrollment.user else None
+    grade.subject_name = enrollment.subject.name if enrollment.subject else None
+    grade.subject_code = enrollment.subject.code if enrollment.subject else None
+    grade.period_name = enrollment.period.name if enrollment.period else None
+    grade.period_code = enrollment.period.code if enrollment.period else None
     return grade
 
 
