@@ -148,6 +148,13 @@ class TestGradesCreate:
         assert result["enrollment_id"] == setup["enrollment"].id
         assert result["value"] == 88.5  # Changed from string to float
         assert result["notes"] == "Buen trabajo"
+        assert result["enrollment_label"] is not None
+        assert setup["subject"].name in result["enrollment_label"]
+        assert result["student_full_name"] == setup["student"].full_name
+        assert result["subject_name"] == setup["subject"].name
+        assert result["subject_code"] == setup["subject"].code
+        assert result["period_name"] == setup["period"].name
+        assert result["period_code"] == setup["period"].code
 
     def test_create_grade_teacher_success(self, api_client: TestClient, db_setup_grades, auth_headers_teacher):
         """Profesor puede crear grade exitosamente."""
@@ -241,6 +248,8 @@ class TestGradesList:
         result = response.json()
         assert len(result) == 1
         assert result[0]["enrollment_id"] == setup["enrollment"].id
+        assert result[0]["subject_name"] == setup["subject"].name
+        assert result[0]["period_name"] == setup["period"].name
 
 
 class TestGradesGet:

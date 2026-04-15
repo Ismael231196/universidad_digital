@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, condecimal, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class GradeCreate(BaseModel):
@@ -31,6 +31,12 @@ class GradeResponse(BaseModel):
     value: float
     notes: str | None
     created_at: datetime
+    enrollment_label: str | None = None
+    student_full_name: str | None = None
+    subject_name: str | None = None
+    subject_code: str | None = None
+    period_name: str | None = None
+    period_code: str | None = None
 
     @field_validator("value", mode="before")
     @classmethod

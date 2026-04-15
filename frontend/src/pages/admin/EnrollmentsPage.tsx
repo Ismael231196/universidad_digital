@@ -47,6 +47,7 @@ export function EnrollmentsPage() {
       value: String(period.id),
       label: `${period.name} (#${period.id})`
     })) ?? [];
+  const hasEnrollments = (enrollments?.length ?? 0) > 0;
 
   const handleCreate = async (values: CreateForm) => {
     try {
@@ -106,15 +107,26 @@ export function EnrollmentsPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !hasEnrollments ? (
+          <p>No hay inscripciones registradas.</p>
         ) : (
           <Table<EnrollmentResponse>
             caption="Listado de inscripciones"
             data={enrollments ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              { header: "Estudiante", render: (row) => row.user_id },
-              { header: "Materia", render: (row) => row.subject_id },
-              { header: "Periodo", render: (row) => row.period_id },
+              {
+                header: "Estudiante",
+                render: (row) => row.user_full_name ?? `Usuario #${row.user_id}`
+              },
+              {
+                header: "Materia",
+                render: (row) => row.subject_name ?? `Materia #${row.subject_id}`
+              },
+              {
+                header: "Periodo",
+                render: (row) => row.period_name ?? `Periodo #${row.period_id}`
+              },
               { header: "Activo", render: (row) => (row.is_active ? "Sí" : "No") },
               {
                 header: "Acciones",

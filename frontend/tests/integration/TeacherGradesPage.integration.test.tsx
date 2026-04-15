@@ -56,6 +56,7 @@ describe("TeacherGradesPage integration", () => {
           {
             id: 1,
             enrollment_id: 10,
+            enrollment_label: "Matemáticas · 2025-1",
             value: 92,
             notes: "Excelente",
             created_at: new Date().toISOString()
@@ -75,6 +76,7 @@ describe("TeacherGradesPage integration", () => {
 
     render(<TeacherGradesPage />);
 
+    expect(screen.getByText("Matemáticas · 2025-1")).toBeInTheDocument();
     expect(screen.getByText("92")).toBeInTheDocument();
     expect(screen.getByText("Excelente")).toBeInTheDocument();
   });
@@ -167,5 +169,16 @@ describe("TeacherGradesPage integration", () => {
     render(<TeacherGradesPage />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(/error al cargar calificaciones/i);
+  });
+
+  it("muestra estado vacío cuando no hay calificaciones", () => {
+    mockUseFetch(
+      { data: [], error: null, isLoading: false, reload: vi.fn() },
+      { data: [], error: null, isLoading: false, reload: vi.fn() }
+    );
+
+    render(<TeacherGradesPage />);
+
+    expect(screen.getByText(/no hay calificaciones registradas/i)).toBeInTheDocument();
   });
 });

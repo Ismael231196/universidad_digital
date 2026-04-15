@@ -231,6 +231,10 @@ GET/PUT     /grades/{id}
 DELETE      /grades/{id}
 ```
 
+> Nota de contrato (compatibilidad): `GET /enrollments` y `GET /grades` mantienen los IDs actuales y
+> ahora también incluyen campos descriptivos opcionales para UI (`user_full_name`, `subject_name`,
+> `period_name`, `enrollment_label`, etc.) para evitar renderizar solo identificadores numéricos.
+
 ### Requisitos
 
 Instalar dependencias desde `backend/requirements.txt`.

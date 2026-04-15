@@ -42,8 +42,12 @@ export function GradesPage() {
   const enrollmentOptions =
     enrollments?.map((enrollment) => ({
       value: String(enrollment.id),
-      label: `Inscripción #${enrollment.id}`
+      label:
+        enrollment.subject_name && enrollment.period_name
+          ? `${enrollment.subject_name} · ${enrollment.period_name}`
+          : `Inscripción #${enrollment.id}`
     })) ?? [];
+  const hasGrades = (grades?.length ?? 0) > 0;
 
   const handleCreate = async (values: CreateForm) => {
     try {
@@ -134,13 +138,18 @@ export function GradesPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !hasGrades ? (
+          <p>No hay calificaciones registradas.</p>
         ) : (
           <Table<GradeResponse>
             caption="Listado de calificaciones"
             data={grades ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              { header: "Inscripción", render: (row) => row.enrollment_id },
+              {
+                header: "Inscripción",
+                render: (row) => row.enrollment_label ?? `Inscripción #${row.enrollment_id}`
+              },
               { header: "Nota", render: (row) => row.value },
               { header: "Notas", render: (row) => row.notes ?? "-" }
             ]}

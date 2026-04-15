@@ -7,6 +7,12 @@ export type EnrollmentResponse = {
   period_id: number;
   is_active: boolean;
   enrolled_at: string;
+  user_full_name?: string | null;
+  user_email?: string | null;
+  subject_name?: string | null;
+  subject_code?: string | null;
+  period_name?: string | null;
+  period_code?: string | null;
 };
 
 export type EnrollmentCreate = {
