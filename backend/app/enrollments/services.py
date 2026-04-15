@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ConflictError, NotFoundError
 from app.enrollments.models import Enrollment
@@ -9,6 +9,16 @@ from app.enrollments.schemas import EnrollmentCreate, EnrollmentUpdate
 from app.periods.models import AcademicPeriod
 from app.subjects.models import Subject
 from app.users.models import User
+
+
+def _enrich_enrollment(enrollment: Enrollment) -> Enrollment:
+    enrollment.user_full_name = enrollment.user.full_name if enrollment.user else None
+    enrollment.user_email = enrollment.user.email if enrollment.user else None
+    enrollment.subject_name = enrollment.subject.name if enrollment.subject else None
+    enrollment.subject_code = enrollment.subject.code if enrollment.subject else None
+    enrollment.period_name = enrollment.period.name if enrollment.period else None
+    enrollment.period_code = enrollment.period.code if enrollment.period else None
+    return enrollment
 
 
 def create_enrollment(db: Session, data: EnrollmentCreate, actor: User) -> Enrollment:
@@ -69,26 +79,42 @@ def create_enrollment(db: Session, data: EnrollmentCreate, actor: User) -> Enrol
     db.add(enrollment)
     db.commit()
     db.refresh(enrollment)
-    return enrollment
+    return _enrich_enrollment(enrollment)
 
 
 def list_enrollments(db: Session, user: User) -> list[Enrollment]:
     """Lista inscripciones respetando ownership."""
-    stmt = select(Enrollment).order_by(Enrollment.id)
+    stmt = (
+        select(Enrollment)
+        .options(
+            selectinload(Enrollment.user),
+            selectinload(Enrollment.subject),
+            selectinload(Enrollment.period),
+        )
+        .order_by(Enrollment.id)
+    )
     if any(role.name == "Estudiante" for role in user.roles):
         stmt = stmt.where(Enrollment.user_id == user.id)
-    return list(db.scalars(stmt).all())
+    return [_enrich_enrollment(enrollment) for enrollment in db.scalars(stmt).all()]
 
 
 def get_enrollment(db: Session, enrollment_id: int, user: User) -> Enrollment:
     """Obtiene una inscripción por ID respetando ownership."""
-    enrollment = db.get(Enrollment, enrollment_id)
+    enrollment = db.scalar(
+        select(Enrollment)
+        .options(
+            selectinload(Enrollment.user),
+            selectinload(Enrollment.subject),
+            selectinload(Enrollment.period),
+        )
+        .where(Enrollment.id == enrollment_id)
+    )
     if not enrollment:
         raise NotFoundError("Inscripción no encontrada.")
     if any(role.name == "Estudiante" for role in user.roles):
         if enrollment.user_id != user.id:
             raise ConflictError("Acceso no permitido.")
-    return enrollment
+    return _enrich_enrollment(enrollment)
 
 
 def update_enrollment(db: Session, enrollment_id: int, data: EnrollmentUpdate, user: User) -> Enrollment:
@@ -98,7 +124,7 @@ def update_enrollment(db: Session, enrollment_id: int, data: EnrollmentUpdate, u
         enrollment.is_active = data.is_active
     db.commit()
     db.refresh(enrollment)
-    return enrollment
+    return _enrich_enrollment(enrollment)
 
 
 def deactivate_enrollment(db: Session, enrollment_id: int, user: User) -> Enrollment:
@@ -107,4 +133,4 @@ def deactivate_enrollment(db: Session, enrollment_id: int, user: User) -> Enroll
     enrollment.is_active = False
     db.commit()
     db.refresh(enrollment)
-    return enrollment
+    return _enrich_enrollment(enrollment)
