@@ -35,6 +35,7 @@ def _enrich_grade(grade: Grade) -> Grade:
         grade.subject_code = None
         grade.period_name = None
         grade.period_code = None
+        grade.teacher_full_name = None
         return grade
     grade.enrollment_label = _build_enrollment_label(enrollment)
     grade.student_full_name = enrollment.user.full_name if enrollment.user else None
@@ -42,6 +43,7 @@ def _enrich_grade(grade: Grade) -> Grade:
     grade.subject_code = enrollment.subject.code if enrollment.subject else None
     grade.period_name = enrollment.period.name if enrollment.period else None
     grade.period_code = enrollment.period.code if enrollment.period else None
+    grade.teacher_full_name = grade.teacher.full_name if grade.teacher else None
     return grade
 
 
@@ -58,15 +60,31 @@ def create_grade(db: Session, data: GradeCreate) -> Grade:
     )
     if exists:
         raise ConflictError("Ya existe una calificación para este estudiante y materia en este periodo.")
-    grade = Grade(
-        enrollment_id=data.enrollment_id,
-        value=Decimal(str(data.value)),  # Convert float to Decimal
-        notes=data.notes,
-    )
-    db.add(grade)
-    db.commit()
-    db.refresh(grade)
-    return _enrich_grade(grade)
+    # user: User debe ser pasado como argumento
+    # (ajustar endpoint para pasar user)
+    def _inner(db: Session, data: GradeCreate, user: User) -> Grade:
+        enrollment = db.get(Enrollment, data.enrollment_id)
+        if not enrollment:
+            raise NotFoundError("Inscripción no encontrada.")
+        if not enrollment.is_active:
+            raise ConflictError("Inscripción inactiva.")
+        # Validar que no exista ya una calificación para esta inscripción
+        exists = db.scalar(
+            select(Grade).where(Grade.enrollment_id == data.enrollment_id)
+        )
+        if exists:
+            raise ConflictError("Ya existe una calificación para este estudiante y materia en este periodo.")
+        grade = Grade(
+            enrollment_id=data.enrollment_id,
+            value=Decimal(str(data.value)),
+            notes=data.notes,
+            teacher_id=user.id
+        )
+        db.add(grade)
+        db.commit()
+        db.refresh(grade)
+        return _enrich_grade(grade)
+    return _inner(db, data, user)
 
 
 def list_grades(db: Session, user: User) -> list[Grade]:
@@ -112,6 +130,7 @@ def update_grade(db: Session, grade_id: int, data: GradeUpdate, user: User) -> G
         grade.value = Decimal(str(data.value))  # Convert float to Decimal
     if data.notes is not None:
         grade.notes = data.notes
+    grade.teacher_id = user.id
     db.commit()
     db.refresh(grade)
     return _enrich_grade(grade)

@@ -78,6 +78,16 @@ export function TeacherGradesPage() {
     }
   };
 
+  // Manejar edición desde la tabla
+  const handleEdit = (row: GradeResponse) => {
+    updateForm.reset({
+      id: String(row.id),
+      value: row.value,
+      notes: row.notes ?? ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <DashboardLayout>
       <div className="grid grid-2">
@@ -146,12 +156,19 @@ export function TeacherGradesPage() {
             data={grades ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              {
-                header: "Inscripción",
-                render: (row) => row.enrollment_label ?? `Inscripción #${row.enrollment_id}`
-              },
+              { header: "Estudiante", render: (row) => row.student_full_name ?? "-" },
+              { header: "Materia", render: (row) => row.subject_name ?? "-" },
+              { header: "Profesor", render: (row) => row.teacher_full_name ?? "-" },
               { header: "Nota", render: (row) => row.value },
-              { header: "Notas", render: (row) => row.notes ?? "-" }
+              { header: "Notas", render: (row) => row.notes ?? "-" },
+              {
+                header: "Editar",
+                render: (row) => (
+                  <Button type="button" variant="secondary" size="small" onClick={() => handleEdit(row)}>
+                    Editar
+                  </Button>
+                )
+              }
             ]}
           />
         )}

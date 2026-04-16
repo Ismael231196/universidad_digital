@@ -37,6 +37,7 @@ class GradeResponse(BaseModel):
     subject_code: str | None = None
     period_name: str | None = None
     period_code: str | None = None
+    teacher_full_name: str | None = None
 
     @field_validator("value", mode="before")
     @classmethod
