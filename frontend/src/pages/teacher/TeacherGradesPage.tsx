@@ -164,7 +164,7 @@ export function TeacherGradesPage() {
               {
                 header: "Editar",
                 render: (row) => (
-                  <Button type="button" variant="secondary" size="small" onClick={() => handleEdit(row)}>
+                  <Button type="button" variant="secondary" onClick={() => handleEdit(row)}>
                     Editar
                   </Button>
                 )
