@@ -6,6 +6,7 @@ import type { GradeResponse } from "../../api/grades";
 
 export function StudentGradesPage() {
   const { data, error, isLoading } = useGrades();
+  const hasGrades = (data?.length ?? 0) > 0;
 
   return (
     <DashboardLayout>
@@ -14,13 +15,18 @@ export function StudentGradesPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !hasGrades ? (
+          <p>Aún no tienes calificaciones registradas.</p>
         ) : (
           <Table<GradeResponse>
             caption="Calificaciones"
             data={data ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              { header: "Inscripción", render: (row) => row.enrollment_id },
+              {
+                header: "Inscripción",
+                render: (row) => row.enrollment_label ?? `Inscripción #${row.enrollment_id}`
+              },
               { header: "Nota", render: (row) => row.value },
               { header: "Notas", render: (row) => row.notes ?? "-" }
             ]}

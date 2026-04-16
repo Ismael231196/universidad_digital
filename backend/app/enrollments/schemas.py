@@ -33,3 +33,9 @@ class EnrollmentResponse(BaseModel):
     period_id: int
     is_active: bool
     enrolled_at: datetime
+    user_full_name: str | None = None
+    user_email: str | None = None
+    subject_name: str | None = None
+    subject_code: str | None = None
+    period_name: str | None = None
+    period_code: str | None = None

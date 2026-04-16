@@ -56,6 +56,9 @@ La app se levanta en `http://localhost:3000`.
 4) Si el backend usa cookie HttpOnly, se envía con `withCredentials`.
 5) `/auth/me` valida la sesión y retorna roles.
 
+Además, en vistas de inscripciones y calificaciones se consumen campos descriptivos opcionales del backend
+(`subject_name`, `period_name`, `user_full_name`, `enrollment_label`) con fallback a IDs para mantener compatibilidad.
+
 ### 6. Seguridad aplicada (OWASP Frontend)
 
 - Sin LocalStorage para JWT.

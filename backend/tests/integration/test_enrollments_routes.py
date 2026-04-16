@@ -130,6 +130,12 @@ class TestEnrollmentsCreate:
         assert result["subject_id"] == setup["subject"].id
         assert result["period_id"] == setup["period"].id
         assert result["is_active"] is True
+        assert result["user_full_name"] == setup["student"].full_name
+        assert result["user_email"] == setup["student"].email
+        assert result["subject_name"] == setup["subject"].name
+        assert result["subject_code"] == setup["subject"].code
+        assert result["period_name"] == setup["period"].name
+        assert result["period_code"] == setup["period"].code
 
     def test_create_enrollment_student_own_success(self, api_client: TestClient, db_setup_enrollments):
         """Estudiante puede inscribirse a sí mismo."""

@@ -6,6 +6,12 @@ export type GradeResponse = {
   value: number;
   notes: string | null;
   created_at: string;
+  enrollment_label?: string | null;
+  student_full_name?: string | null;
+  subject_name?: string | null;
+  subject_code?: string | null;
+  period_name?: string | null;
+  period_code?: string | null;
 };
 
 export type GradeCreate = {

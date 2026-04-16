@@ -41,9 +41,36 @@ export function EnrollmentsPage() {
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
-  const userOptions = users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ?? [];
-  const subjectOptions = subjects?.map((subject) => ({ value: String(subject.id), label: `${subject.name} (#${subject.id})` })) ?? [];
-  const periodOptions = periods?.map((period) => ({ value: String(period.id), label: `${period.name} (#${period.id})` })) ?? [];
+<<<<<<< HEAD
+  const userOptions =
+    users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ?? [];
+  const subjectOptions =
+    subjects?.map((subject) => ({
+      value: String(subject.id),
+      label: `${subject.name} (#${subject.id})`
+    })) ?? [];
+  const periodOptions =
+    periods?.map((period) => ({
+      value: String(period.id),
+      label: `${period.name} (#${period.id})`
+    })) ?? [];
+  const hasEnrollments = (enrollments?.length ?? 0) > 0;
+=======
+  const userOptions =
+    users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ??
+    [];
+  const subjectOptions =
+    subjects?.map((subject) => ({
+      value: String(subject.id),
+      label: `${subject.name} (#${subject.id})`
+    })) ?? [];
+  const periodOptions =
+    periods?.map((period) => ({
+      value: String(period.id),
+      label: `${period.name} (#${period.id})`
+    })) ?? [];
+  const hasEnrollments = (enrollments?.length ?? 0) > 0;
+>>>>>>> d7bdcfa5c2b3433d6f208358fd281af705f1f644
 
   const handleCreate = async (values: CreateForm) => {
     try {
@@ -129,15 +156,26 @@ export function EnrollmentsPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !hasEnrollments ? (
+          <p>No hay inscripciones registradas.</p>
         ) : (
           <Table<EnrollmentResponse>
             caption="Listado de inscripciones"
             data={enrollments ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              { header: "Estudiante", render: (row) => row.user_id },
-              { header: "Materia", render: (row) => row.subject_id },
-              { header: "Periodo", render: (row) => row.period_id },
+              {
+                header: "Estudiante",
+                render: (row) => row.user_full_name ?? `Usuario #${row.user_id}`
+              },
+              {
+                header: "Materia",
+                render: (row) => row.subject_name ?? `Materia #${row.subject_id}`
+              },
+              {
+                header: "Periodo",
+                render: (row) => row.period_name ?? `Periodo #${row.period_id}`
+              },
               { header: "Activo", render: (row) => (row.is_active ? "Sí" : "No") },
               {
                 header: "Acciones",

@@ -6,6 +6,7 @@ import type { EnrollmentResponse } from "../../api/enrollments";
 
 export function StudentEnrollmentsPage() {
   const { data, error, isLoading } = useEnrollments();
+  const hasEnrollments = (data?.length ?? 0) > 0;
 
   return (
     <DashboardLayout>
@@ -14,14 +15,22 @@ export function StudentEnrollmentsPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !hasEnrollments ? (
+          <p>No tienes inscripciones activas para mostrar.</p>
         ) : (
           <Table<EnrollmentResponse>
             caption="Inscripciones"
             data={data ?? []}
             columns={[
               { header: "ID", render: (row) => row.id },
-              { header: "Materia", render: (row) => row.subject_id },
-              { header: "Periodo", render: (row) => row.period_id },
+              {
+                header: "Materia",
+                render: (row) => row.subject_name ?? `Materia #${row.subject_id}`
+              },
+              {
+                header: "Periodo",
+                render: (row) => row.period_name ?? `Periodo #${row.period_id}`
+              },
               { header: "Activo", render: (row) => (row.is_active ? "Sí" : "No") }
             ]}
           />
