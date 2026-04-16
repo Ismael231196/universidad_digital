@@ -32,7 +32,7 @@ def create_user_endpoint(
 @router.get("", response_model=list[UserResponse])
 def list_users_endpoint(
     db: Session = Depends(get_db),
-    _admin=Depends(require_roles_dep("Administrador")),
+    _admin=Depends(require_roles_dep("Administrador", "Docente")),
 ) -> list[UserResponse]:
     users = list_users(db)
     return [
