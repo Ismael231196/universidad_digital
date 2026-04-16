@@ -12,6 +12,7 @@ export type GradeResponse = {
   subject_code?: string | null;
   period_name?: string | null;
   period_code?: string | null;
+  teacher_full_name?: string | null;
 };
 
 export type GradeCreate = {

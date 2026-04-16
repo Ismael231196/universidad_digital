@@ -35,11 +35,13 @@ export function SubjectsPage() {
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
+  const [editing, setEditing] = useState<SubjectResponse | null>(null);
 
   const handleEdit = (subject: SubjectResponse) => {
     updateForm.setValue("id", String(subject.id));
     updateForm.setValue("name", subject.name);
     updateForm.setValue("credits", subject.credits);
+    setEditing(subject);
   };
 
   const handleCreate = async (values: CreateForm) => {
@@ -61,6 +63,7 @@ export function SubjectsPage() {
       });
       setAlert({ message: "Materia actualizada.", variant: "success" });
       updateForm.reset();
+      setEditing(null);
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -103,30 +106,38 @@ export function SubjectsPage() {
             <Button type="submit">Crear</Button>
           </form>
         </div>
-        <div className="card">
-          <h2>Actualizar materia</h2>
-          <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
-            <Input
-              label="ID de materia"
-              {...updateForm.register("id")}
-              error={updateForm.formState.errors.id?.message}
-            />
-            <Input
-              label="Nombre (opcional)"
-              {...updateForm.register("name")}
-              error={updateForm.formState.errors.name?.message}
-            />
-            <Input
-              label="Créditos (opcional)"
-              type="number"
-              {...updateForm.register("credits")}
-              error={updateForm.formState.errors.credits?.message}
-            />
-            <Button type="submit" variant="secondary">
-              Actualizar
-            </Button>
-          </form>
-        </div>
+        {editing && (
+          <div className="card">
+            <h2>Actualizar materia</h2>
+            <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
+              <Input
+                label="ID de materia"
+                {...updateForm.register("id")}
+                error={updateForm.formState.errors.id?.message}
+                disabled
+              />
+              <Input
+                label="Nombre (opcional)"
+                {...updateForm.register("name")}
+                error={updateForm.formState.errors.name?.message}
+              />
+              <Input
+                label="Créditos (opcional)"
+                type="number"
+                {...updateForm.register("credits")}
+                error={updateForm.formState.errors.credits?.message}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button type="submit" variant="secondary">
+                  Actualizar
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => { setEditing(null); updateForm.reset(); }}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

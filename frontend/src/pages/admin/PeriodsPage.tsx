@@ -37,12 +37,14 @@ export function PeriodsPage() {
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
+  const [editing, setEditing] = useState<PeriodResponse | null>(null);
 
   const handleEdit = (period: PeriodResponse) => {
     updateForm.setValue("id", String(period.id));
     updateForm.setValue("name", period.name);
     updateForm.setValue("start_date", period.start_date);
     updateForm.setValue("end_date", period.end_date);
+    setEditing(period);
   };
 
   const handleCreate = async (values: CreateForm) => {
@@ -65,6 +67,7 @@ export function PeriodsPage() {
       });
       setAlert({ message: "Periodo actualizado.", variant: "success" });
       updateForm.reset();
+      setEditing(null);
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -111,34 +114,42 @@ export function PeriodsPage() {
             <Button type="submit">Crear</Button>
           </form>
         </div>
-        <div className="card">
-          <h2>Actualizar periodo</h2>
-          <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
-            <Input
-              label="ID de periodo"
-              {...updateForm.register("id")}
-              error={updateForm.formState.errors.id?.message}
-            />
-            <Input
-              label="Nombre (opcional)"
-              {...updateForm.register("name")}
-              error={updateForm.formState.errors.name?.message}
-            />
-            <Input
-              label="Fecha inicio (opcional)"
-              {...updateForm.register("start_date")}
-              error={updateForm.formState.errors.start_date?.message}
-            />
-            <Input
-              label="Fecha fin (opcional)"
-              {...updateForm.register("end_date")}
-              error={updateForm.formState.errors.end_date?.message}
-            />
-            <Button type="submit" variant="secondary">
-              Actualizar
-            </Button>
-          </form>
-        </div>
+        {editing && (
+          <div className="card">
+            <h2>Actualizar periodo</h2>
+            <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
+              <Input
+                label="ID de periodo"
+                {...updateForm.register("id")}
+                error={updateForm.formState.errors.id?.message}
+                disabled
+              />
+              <Input
+                label="Nombre (opcional)"
+                {...updateForm.register("name")}
+                error={updateForm.formState.errors.name?.message}
+              />
+              <Input
+                label="Fecha inicio (opcional)"
+                {...updateForm.register("start_date")}
+                error={updateForm.formState.errors.start_date?.message}
+              />
+              <Input
+                label="Fecha fin (opcional)"
+                {...updateForm.register("end_date")}
+                error={updateForm.formState.errors.end_date?.message}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button type="submit" variant="secondary">
+                  Actualizar
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => { setEditing(null); updateForm.reset(); }}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

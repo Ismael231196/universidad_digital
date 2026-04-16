@@ -154,6 +154,10 @@ export function GradesPage() {
                 header: "Materia",
                 render: (row) => row.subject_name ?? "-"
               },
+              {
+                header: "Profesor",
+                render: (row) => row.teacher_full_name ?? "-"
+              },
               { header: "Nota", render: (row) => row.value },
               { header: "Notas", render: (row) => row.notes ?? "-" }
             ]}

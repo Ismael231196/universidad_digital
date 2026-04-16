@@ -39,6 +39,7 @@ export function UsersPage() {
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
+  const [editing, setEditing] = useState<UserResponse | null>(null);
 
   const roleOptions =
     roles?.map((role) => ({ value: String(role.id), label: `${role.name} (#${role.id})` })) ??
@@ -48,6 +49,7 @@ export function UsersPage() {
     updateForm.setValue("id", String(user.id));
     updateForm.setValue("full_name", user.full_name);
     updateForm.setValue("is_active", user.is_active ? "true" : "false");
+    setEditing(user);
   };
 
   const handleCreate = async (values: CreateForm) => {
@@ -74,6 +76,7 @@ export function UsersPage() {
       });
       setAlert({ message: "Usuario actualizado correctamente.", variant: "success" });
       updateForm.reset();
+      setEditing(null);
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -126,34 +129,42 @@ export function UsersPage() {
             <Button type="submit">Crear</Button>
           </form>
         </div>
-        <div className="card">
-          <h2>Actualizar usuario</h2>
-          <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
-            <Input
-              label="ID de usuario"
-              {...updateForm.register("id")}
-              error={updateForm.formState.errors.id?.message}
-            />
-            <Input
-              label="Nombre completo (opcional)"
-              {...updateForm.register("full_name")}
-              error={updateForm.formState.errors.full_name?.message}
-            />
-            <Select
-              label="Activo"
-              options={[
-                { value: "", label: "Sin cambios" },
-                { value: "true", label: "Activo" },
-                { value: "false", label: "Inactivo" }
-              ]}
-              {...updateForm.register("is_active")}
-              error={updateForm.formState.errors.is_active?.message}
-            />
-            <Button type="submit" variant="secondary">
-              Actualizar
-            </Button>
-          </form>
-        </div>
+        {editing && (
+          <div className="card">
+            <h2>Actualizar usuario</h2>
+            <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
+              <Input
+                label="ID de usuario"
+                {...updateForm.register("id")}
+                error={updateForm.formState.errors.id?.message}
+                disabled
+              />
+              <Input
+                label="Nombre completo (opcional)"
+                {...updateForm.register("full_name")}
+                error={updateForm.formState.errors.full_name?.message}
+              />
+              <Select
+                label="Activo"
+                options={[
+                  { value: "", label: "Sin cambios" },
+                  { value: "true", label: "Activo" },
+                  { value: "false", label: "Inactivo" }
+                ]}
+                {...updateForm.register("is_active")}
+                error={updateForm.formState.errors.is_active?.message}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button type="submit" variant="secondary">
+                  Actualizar
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => { setEditing(null); updateForm.reset(); }}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
