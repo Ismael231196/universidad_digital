@@ -13,6 +13,7 @@ import { rolesService } from "../../services/rolesService";
 import { useFetch } from "../../hooks/useFetch";
 import { getErrorMessage } from "../../utils/apiError";
 import type { UserResponse } from "../../api/auth";
+import { useAuth } from "../../hooks/useAuth";
 
 const createSchema = z.object({
   email: z.string().email({ message: "Ingresa un correo electrónico válido." }),
@@ -31,6 +32,7 @@ type CreateForm = z.infer<typeof createSchema>;
 type UpdateForm = z.infer<typeof updateSchema>;
 
 export function UsersPage() {
+  const { user: currentUser, refreshUser, logout } = useAuth();
   const [alert, setAlert] = useState<{ message: string; variant: "success" | "error" } | null>(
     null
   );
@@ -70,10 +72,20 @@ export function UsersPage() {
 
   const handleUpdate = async (values: UpdateForm) => {
     try {
-      await usersService.update(Number(values.id), {
+      const updated = await usersService.update(Number(values.id), {
         full_name: values.full_name || undefined,
         is_active: values.is_active ? values.is_active === "true" : undefined
       });
+      // Si el usuario editado es el logeado:
+      if (currentUser && Number(values.id) === currentUser.id) {
+        if (values.is_active === "false") {
+          // Si se desactiva a sí mismo, cerrar sesión
+          await logout();
+        } else {
+          // Si solo actualiza nombre u otros datos, refrescar sesión
+          await refreshUser();
+        }
+      }
       setAlert({ message: "Usuario actualizado correctamente.", variant: "success" });
       updateForm.reset();
       setEditing(null);

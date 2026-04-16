@@ -12,11 +12,21 @@ import { useFetch } from "../../hooks/useFetch";
 import { getErrorMessage } from "../../utils/apiError";
 import type { PeriodResponse } from "../../api/periods";
 
+const currentYear = new Date().getFullYear();
+const yearMsg = `El año debe ser ${currentYear} o superior.`;
+const dateYearCheck = (val: string) => {
+  const year = Number(val.slice(0, 4));
+  return year >= currentYear;
+};
 const createSchema = z.object({
   code: z.string().min(2, { message: "El código debe tener al menos 2 caracteres." }),
   name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
-  start_date: z.string().min(8, { message: "La fecha de inicio debe tener formato YYYY-MM-DD (8 caracteres)." }),
-  end_date: z.string().min(8, { message: "La fecha de fin debe tener formato YYYY-MM-DD (8 caracteres)." })
+  start_date: z.string()
+    .min(8, { message: "La fecha de inicio debe tener formato YYYY-MM-DD (8 caracteres)." })
+    .refine(dateYearCheck, { message: `La fecha de inicio: ${yearMsg}` }),
+  end_date: z.string()
+    .min(8, { message: "La fecha de fin debe tener formato YYYY-MM-DD (8 caracteres)." })
+    .refine(dateYearCheck, { message: `La fecha de fin: ${yearMsg}` })
 });
 
 const updateSchema = z.object({
@@ -102,12 +112,14 @@ export function PeriodsPage() {
               error={createForm.formState.errors.name?.message}
             />
             <Input
-              label="Fecha inicio (YYYY-MM-DD)"
+              label="Fecha inicio"
+              type="date"
               {...createForm.register("start_date")}
               error={createForm.formState.errors.start_date?.message}
             />
             <Input
-              label="Fecha fin (YYYY-MM-DD)"
+              label="Fecha fin"
+              type="date"
               {...createForm.register("end_date")}
               error={createForm.formState.errors.end_date?.message}
             />
@@ -131,11 +143,13 @@ export function PeriodsPage() {
               />
               <Input
                 label="Fecha inicio (opcional)"
+                type="date"
                 {...updateForm.register("start_date")}
                 error={updateForm.formState.errors.start_date?.message}
               />
               <Input
                 label="Fecha fin (opcional)"
+                type="date"
                 {...updateForm.register("end_date")}
                 error={updateForm.formState.errors.end_date?.message}
               />
