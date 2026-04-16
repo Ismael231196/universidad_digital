@@ -94,6 +94,28 @@ def get_enrollment(db: Session, enrollment_id: int, user: User) -> Enrollment:
 def update_enrollment(db: Session, enrollment_id: int, data: EnrollmentUpdate, user: User) -> Enrollment:
     """Actualiza una inscripción."""
     enrollment = get_enrollment(db, enrollment_id, user)
+    # Permitir actualizar user_id, subject_id, period_id si se envían
+    if data.user_id is not None:
+        user_obj = db.get(User, data.user_id)
+        if not user_obj:
+            raise NotFoundError("Usuario no encontrado.")
+        if not user_obj.is_active:
+            raise ConflictError("Usuario inactivo.")
+        enrollment.user_id = data.user_id
+    if data.subject_id is not None:
+        subject_obj = db.get(Subject, data.subject_id)
+        if not subject_obj:
+            raise NotFoundError("Materia no encontrada.")
+        if not subject_obj.is_active:
+            raise ConflictError("Materia inactiva.")
+        enrollment.subject_id = data.subject_id
+    if data.period_id is not None:
+        period_obj = db.get(AcademicPeriod, data.period_id)
+        if not period_obj:
+            raise NotFoundError("Periodo académico no encontrado.")
+        if not period_obj.is_active:
+            raise ConflictError("Periodo académico inactivo.")
+        enrollment.period_id = data.period_id
     if data.is_active is not None:
         enrollment.is_active = data.is_active
     db.commit()

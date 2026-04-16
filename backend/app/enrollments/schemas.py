@@ -13,9 +13,12 @@ class EnrollmentCreate(BaseModel):
     period_id: int = Field(ge=1)
 
 
+
 class EnrollmentUpdate(BaseModel):
     """Datos permitidos para actualizar una inscripción."""
-
+    user_id: int | None = None
+    subject_id: int | None = None
+    period_id: int | None = None
     is_active: bool | None = None
 
 
