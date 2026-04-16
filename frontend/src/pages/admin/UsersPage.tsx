@@ -158,7 +158,7 @@ export function UsersPage() {
                 <Button type="submit" variant="secondary">
                   Actualizar
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => { setEditing(null); updateForm.reset(); }}>
+                <Button type="button" variant="secondary" onClick={() => { setEditing(null); updateForm.reset(); }}>
                   Cancelar
                 </Button>
               </div>
