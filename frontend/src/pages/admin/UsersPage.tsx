@@ -15,15 +15,15 @@ import { getErrorMessage } from "../../utils/apiError";
 import type { UserResponse } from "../../api/auth";
 
 const createSchema = z.object({
-  email: z.string().email(),
-  full_name: z.string().min(2),
-  password: z.string().min(8),
-  role_id: z.string().min(1)
+  email: z.string().email({ message: "Ingresa un correo electrónico válido." }),
+  full_name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  password: z.string().min(8, { message: "La contraseña debe tener al menos 8 caracteres." }),
+  role_id: z.string().min(1, { message: "Selecciona un rol." })
 });
 
 const updateSchema = z.object({
-  id: z.string().min(1),
-  full_name: z.string().min(2).optional(),
+  id: z.string().min(1, { message: "El ID es obligatorio." }),
+  full_name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }).optional(),
   is_active: z.string().optional()
 });
 

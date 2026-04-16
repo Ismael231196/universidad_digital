@@ -17,15 +17,15 @@ import type { EnrollmentResponse } from "../../api/enrollments";
 
 
 const createSchema = z.object({
-  user_id: z.string().min(1, "Selecciona un estudiante"),
-  subject_id: z.string().min(1, "Selecciona una materia"),
-  period_id: z.string().min(1, "Selecciona un periodo")
+  user_id: z.string().min(1, { message: "Selecciona un estudiante." }),
+  subject_id: z.string().min(1, { message: "Selecciona una materia." }),
+  period_id: z.string().min(1, { message: "Selecciona un periodo." })
 });
 const updateSchema = z.object({
-  id: z.string().min(1, "ID requerido"),
-  user_id: z.string().min(1, "Selecciona un estudiante"),
-  subject_id: z.string().min(1, "Selecciona una materia"),
-  period_id: z.string().min(1, "Selecciona un periodo")
+  id: z.string().min(1, { message: "ID requerido." }),
+  user_id: z.string().min(1, { message: "Selecciona un estudiante." }),
+  subject_id: z.string().min(1, { message: "Selecciona una materia." }),
+  period_id: z.string().min(1, { message: "Selecciona un periodo." })
 });
 type CreateForm = z.infer<typeof createSchema>;
 type UpdateForm = z.infer<typeof updateSchema>;

@@ -13,17 +13,17 @@ import { getErrorMessage } from "../../utils/apiError";
 import type { PeriodResponse } from "../../api/periods";
 
 const createSchema = z.object({
-  code: z.string().min(2),
-  name: z.string().min(3),
-  start_date: z.string().min(8),
-  end_date: z.string().min(8)
+  code: z.string().min(2, { message: "El código debe tener al menos 2 caracteres." }),
+  name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  start_date: z.string().min(8, { message: "La fecha de inicio debe tener formato YYYY-MM-DD (8 caracteres)." }),
+  end_date: z.string().min(8, { message: "La fecha de fin debe tener formato YYYY-MM-DD (8 caracteres)." })
 });
 
 const updateSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(3).optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional()
+  id: z.string().min(1, { message: "El ID es obligatorio." }),
+  name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }).optional(),
+  start_date: z.string().min(8, { message: "La fecha de inicio debe tener formato YYYY-MM-DD (8 caracteres)." }).optional(),
+  end_date: z.string().min(8, { message: "La fecha de fin debe tener formato YYYY-MM-DD (8 caracteres)." }).optional()
 });
 
 type CreateForm = z.infer<typeof createSchema>;

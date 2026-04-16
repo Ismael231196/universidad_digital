@@ -13,15 +13,15 @@ import { getErrorMessage } from "../../utils/apiError";
 import type { SubjectResponse } from "../../api/subjects";
 
 const createSchema = z.object({
-  code: z.string().min(2),
-  name: z.string().min(3),
-  credits: z.coerce.number().min(1).max(30)
+  code: z.string().min(2, { message: "El código debe tener al menos 2 caracteres." }),
+  name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  credits: z.coerce.number().min(1, { message: "Los créditos deben ser mínimo 1." }).max(30, { message: "Los créditos deben ser máximo 30." })
 });
 
 const updateSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(3).optional(),
-  credits: z.coerce.number().min(1).max(30).optional()
+  id: z.string().min(1, { message: "El ID es obligatorio." }),
+  name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }).optional(),
+  credits: z.coerce.number().min(1, { message: "Los créditos deben ser mínimo 1." }).max(30, { message: "Los créditos deben ser máximo 30." }).optional()
 });
 
 type CreateForm = z.infer<typeof createSchema>;

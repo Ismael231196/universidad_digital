@@ -18,15 +18,15 @@ import { getErrorMessage } from "../../utils/apiError";
 import type { GradeResponse } from "../../api/grades";
 
 const createSchema = z.object({
-  user_id: z.string().min(1, "Selecciona un estudiante."),
-  subject_id: z.string().min(1, "Selecciona una materia."),
-  value: z.coerce.number().min(0, "La nota debe ser mayor o igual a 0.").max(100, "La nota debe ser menor o igual a 100."),
+  user_id: z.string().min(1, { message: "Selecciona un estudiante." }),
+  subject_id: z.string().min(1, { message: "Selecciona una materia." }),
+  value: z.coerce.number().min(0, { message: "La nota debe ser mayor o igual a 0." }).max(100, { message: "La nota debe ser menor o igual a 100." }),
   notes: z.string().optional()
 });
 
 const updateSchema = z.object({
-  id: z.string().min(1),
-  value: z.coerce.number().min(0).max(100).optional(),
+  id: z.string().min(1, { message: "El ID es obligatorio." }),
+  value: z.coerce.number().min(0, { message: "La nota debe ser mayor o igual a 0." }).max(100, { message: "La nota debe ser menor o igual a 100." }).optional(),
   notes: z.string().optional()
 });
 
