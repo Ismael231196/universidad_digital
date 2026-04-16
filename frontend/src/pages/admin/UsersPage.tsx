@@ -72,7 +72,7 @@ export function UsersPage() {
 
   const handleUpdate = async (values: UpdateForm) => {
     try {
-      const updated = await usersService.update(Number(values.id), {
+      await usersService.update(Number(values.id), {
         full_name: values.full_name || undefined,
         is_active: values.is_active ? values.is_active === "true" : undefined
       });
