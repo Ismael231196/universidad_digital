@@ -15,38 +15,35 @@ import { useFetch } from "../../hooks/useFetch";
 import { getErrorMessage } from "../../utils/apiError";
 import type { EnrollmentResponse } from "../../api/enrollments";
 
-const createSchema = z.object({
-  user_id: z.string().min(1),
-  subject_id: z.string().min(1),
-  period_id: z.string().min(1)
-});
 
+const createSchema = z.object({
+  user_id: z.string().min(1, "Selecciona un estudiante"),
+  subject_id: z.string().min(1, "Selecciona una materia"),
+  period_id: z.string().min(1, "Selecciona un periodo")
+});
+const updateSchema = z.object({
+  id: z.string().min(1, "ID requerido"),
+  user_id: z.string().min(1, "Selecciona un estudiante"),
+  subject_id: z.string().min(1, "Selecciona una materia"),
+  period_id: z.string().min(1, "Selecciona un periodo")
+});
 type CreateForm = z.infer<typeof createSchema>;
+type UpdateForm = z.infer<typeof updateSchema>;
 
 export function EnrollmentsPage() {
-  const [alert, setAlert] = useState<{ message: string; variant: "success" | "error" } | null>(
-    null
-  );
+  const [alert, setAlert] = useState<{ message: string; variant: "success" | "error" } | null>(null);
+  const [editData, setEditData] = useState<EnrollmentResponse | null>(null);
   const { data: enrollments, error, isLoading, reload } = useFetch(enrollmentsService.list, []);
   const { data: users } = useFetch(usersService.list, []);
   const { data: subjects } = useFetch(subjectsService.list, []);
   const { data: periods } = useFetch(periodsService.list, []);
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
+  const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
-  const userOptions =
-    users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ??
-    [];
-  const subjectOptions =
-    subjects?.map((subject) => ({
-      value: String(subject.id),
-      label: `${subject.name} (#${subject.id})`
-    })) ?? [];
-  const periodOptions =
-    periods?.map((period) => ({
-      value: String(period.id),
-      label: `${period.name} (#${period.id})`
-    })) ?? [];
+  const userOptions = users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ?? [];
+  const subjectOptions = subjects?.map((subject) => ({ value: String(subject.id), label: `${subject.name} (#${subject.id})` })) ?? [];
+  const periodOptions = periods?.map((period) => ({ value: String(period.id), label: `${period.name} (#${period.id})` })) ?? [];
 
   const handleCreate = async (values: CreateForm) => {
     try {
@@ -57,6 +54,32 @@ export function EnrollmentsPage() {
       });
       setAlert({ message: "Inscripción creada.", variant: "success" });
       createForm.reset();
+      await reload();
+    } catch (err) {
+      setAlert({ message: getErrorMessage(err), variant: "error" });
+    }
+  };
+
+  const handleEditClick = (row: EnrollmentResponse) => {
+    setEditData(row);
+    updateForm.reset({
+      id: String(row.id),
+      user_id: String(row.user_id),
+      subject_id: String(row.subject_id),
+      period_id: String(row.period_id)
+    });
+  };
+
+  const handleUpdate = async (values: UpdateForm) => {
+    try {
+      await enrollmentsService.update(Number(values.id), {
+        user_id: Number(values.user_id),
+        subject_id: Number(values.subject_id),
+        period_id: Number(values.period_id)
+      });
+      setAlert({ message: "Inscripción actualizada.", variant: "success" });
+      setEditData(null);
+      updateForm.reset();
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -119,15 +142,51 @@ export function EnrollmentsPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button variant="danger" onClick={() => void handleDeactivate(row.id)}>
-                    Cancelar
-                  </Button>
+                  <>
+                    <Button variant="secondary" style={{ marginRight: 8 }} onClick={() => handleEditClick(row)}>
+                      Editar
+                    </Button>
+                    <Button variant="danger" onClick={() => void handleDeactivate(row.id)}>
+                      Cancelar
+                    </Button>
+                  </>
                 )
               }
             ]}
           />
         )}
       </div>
+
+      {editData && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>Editar inscripción</h2>
+          <form onSubmit={updateForm.handleSubmit(handleUpdate)} className="grid">
+            <input type="hidden" {...updateForm.register("id")} />
+            <Select
+              label="Estudiante"
+              options={[{ value: "", label: "Selecciona un estudiante" }, ...userOptions]}
+              {...updateForm.register("user_id")}
+              error={updateForm.formState.errors.user_id?.message}
+            />
+            <Select
+              label="Materia"
+              options={[{ value: "", label: "Selecciona una materia" }, ...subjectOptions]}
+              {...updateForm.register("subject_id")}
+              error={updateForm.formState.errors.subject_id?.message}
+            />
+            <Select
+              label="Periodo"
+              options={[{ value: "", label: "Selecciona un periodo" }, ...periodOptions]}
+              {...updateForm.register("period_id")}
+              error={updateForm.formState.errors.period_id?.message}
+            />
+            <Button type="submit">Guardar cambios</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditData(null)}>
+              Cancelar edición
+            </Button>
+          </form>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

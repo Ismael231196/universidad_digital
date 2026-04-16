@@ -11,7 +11,7 @@ export function AdminDashboard() {
       <div className="welcome-card">
         <div className="welcome-card-content">
           <h1 className="welcome-card-title">
-            ¡Bienvenida, {user?.full_name ?? "Administrador"}! 👋
+            ¡Bienvenido, {user?.full_name ?? "Administrador"}! 👋
           </h1>
           <p className="welcome-card-subtitle">
             Desde aquí puedes gestionar usuarios, materias, periodos, inscripciones y calificaciones de la plataforma.

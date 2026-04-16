@@ -16,6 +16,9 @@ export type EnrollmentCreate = {
 };
 
 export type EnrollmentUpdate = {
+  user_id?: number;
+  subject_id?: number;
+  period_id?: number;
   is_active?: boolean;
 };
 
