@@ -26,28 +26,32 @@ def _build_enrollment_label(enrollment: Enrollment | None) -> str | None:
     return " · ".join(parts)
 
 
-def _enrich_grade(grade: Grade) -> Grade:
+def _enrich_grade(grade: Grade) -> dict:
     enrollment = grade.enrollment
     if not enrollment:
-        grade.enrollment_label = None
-        grade.student_full_name = None
-        grade.subject_name = None
-        grade.subject_code = None
-        grade.period_name = None
-        grade.period_code = None
-        grade.teacher_full_name = None
-        return grade
-    grade.enrollment_label = _build_enrollment_label(enrollment)
-    grade.student_full_name = enrollment.user.full_name if enrollment.user else None
-    grade.subject_name = enrollment.subject.name if enrollment.subject else None
-    grade.subject_code = enrollment.subject.code if enrollment.subject else None
-    grade.period_name = enrollment.period.name if enrollment.period else None
-    grade.period_code = enrollment.period.code if enrollment.period else None
-    grade.teacher_full_name = grade.teacher.full_name if grade.teacher else None
-    return grade
+        return {
+            **grade.__dict__,
+            "enrollment_label": None,
+            "student_full_name": None,
+            "subject_name": None,
+            "subject_code": None,
+            "period_name": None,
+            "period_code": None,
+            "teacher_full_name": None,
+        }
+    return {
+        **grade.__dict__,
+        "enrollment_label": _build_enrollment_label(enrollment),
+        "student_full_name": enrollment.user.full_name if enrollment.user else None,
+        "subject_name": enrollment.subject.name if enrollment.subject else None,
+        "subject_code": enrollment.subject.code if enrollment.subject else None,
+        "period_name": enrollment.period.name if enrollment.period else None,
+        "period_code": enrollment.period.code if enrollment.period else None,
+        "teacher_full_name": grade.teacher.full_name if grade.teacher else None,
+    }
 
 
-def create_grade(db: Session, data: GradeCreate) -> Grade:
+def create_grade(db: Session, data: GradeCreate, user: User) -> dict:
     """Registra una calificación."""
     enrollment = db.get(Enrollment, data.enrollment_id)
     if not enrollment:
@@ -60,34 +64,19 @@ def create_grade(db: Session, data: GradeCreate) -> Grade:
     )
     if exists:
         raise ConflictError("Ya existe una calificación para este estudiante y materia en este periodo.")
-    # user: User debe ser pasado como argumento
-    # (ajustar endpoint para pasar user)
-    def _inner(db: Session, data: GradeCreate, user: User) -> Grade:
-        enrollment = db.get(Enrollment, data.enrollment_id)
-        if not enrollment:
-            raise NotFoundError("Inscripción no encontrada.")
-        if not enrollment.is_active:
-            raise ConflictError("Inscripción inactiva.")
-        # Validar que no exista ya una calificación para esta inscripción
-        exists = db.scalar(
-            select(Grade).where(Grade.enrollment_id == data.enrollment_id)
-        )
-        if exists:
-            raise ConflictError("Ya existe una calificación para este estudiante y materia en este periodo.")
-        grade = Grade(
-            enrollment_id=data.enrollment_id,
-            value=Decimal(str(data.value)),
-            notes=data.notes,
-            teacher_id=user.id
-        )
-        db.add(grade)
-        db.commit()
-        db.refresh(grade)
-        return _enrich_grade(grade)
-    return _inner(db, data, user)
+    grade = Grade(
+        enrollment_id=data.enrollment_id,
+        value=Decimal(str(data.value)),
+        notes=data.notes,
+        teacher_id=user.id
+    )
+    db.add(grade)
+    db.commit()
+    db.refresh(grade)
+    return _enrich_grade(grade)
 
 
-def list_grades(db: Session, user: User) -> list[Grade]:
+def list_grades(db: Session, user: User) -> list[dict]:
     """Lista calificaciones respetando ownership."""
     stmt = (
         select(Grade)
@@ -95,6 +84,7 @@ def list_grades(db: Session, user: User) -> list[Grade]:
             selectinload(Grade.enrollment).selectinload(Enrollment.user),
             selectinload(Grade.enrollment).selectinload(Enrollment.subject),
             selectinload(Grade.enrollment).selectinload(Enrollment.period),
+            selectinload(Grade.teacher),
         )
         .order_by(Grade.id)
     )
@@ -103,7 +93,7 @@ def list_grades(db: Session, user: User) -> list[Grade]:
     return [_enrich_grade(grade) for grade in db.scalars(stmt).all()]
 
 
-def get_grade(db: Session, grade_id: int, user: User) -> Grade:
+def get_grade(db: Session, grade_id: int, user: User) -> dict:
     """Obtiene una calificación por ID respetando ownership."""
     grade = db.scalar(
         select(Grade)
@@ -111,6 +101,7 @@ def get_grade(db: Session, grade_id: int, user: User) -> Grade:
             selectinload(Grade.enrollment).selectinload(Enrollment.user),
             selectinload(Grade.enrollment).selectinload(Enrollment.subject),
             selectinload(Grade.enrollment).selectinload(Enrollment.period),
+            selectinload(Grade.teacher),
         )
         .where(Grade.id == grade_id)
     )
@@ -123,17 +114,34 @@ def get_grade(db: Session, grade_id: int, user: User) -> Grade:
     return _enrich_grade(grade)
 
 
-def update_grade(db: Session, grade_id: int, data: GradeUpdate, user: User) -> Grade:
+def update_grade(db: Session, grade_id: int, data: GradeUpdate, user: User) -> dict:
     """Actualiza una calificación."""
-    grade = get_grade(db, grade_id, user)
+    # Obtener instancia Grade real
+    grade_obj = db.scalar(
+        select(Grade)
+        .options(
+            selectinload(Grade.enrollment).selectinload(Enrollment.user),
+            selectinload(Grade.enrollment).selectinload(Enrollment.subject),
+            selectinload(Grade.enrollment).selectinload(Enrollment.period),
+            selectinload(Grade.teacher),
+        )
+        .where(Grade.id == grade_id)
+    )
+    if not grade_obj:
+        raise NotFoundError("Calificación no encontrada.")
+    if any(role.name == "Estudiante" for role in user.roles):
+        enrollment = db.get(Enrollment, grade_obj.enrollment_id)
+        if not enrollment or enrollment.user_id != user.id:
+            raise ConflictError("Acceso no permitido.")
     if data.value is not None:
-        grade.value = Decimal(str(data.value))  # Convert float to Decimal
+        grade_obj.value = Decimal(str(data.value))  # Convert float to Decimal
     if data.notes is not None:
-        grade.notes = data.notes
-    grade.teacher_id = user.id
+        grade_obj.notes = data.notes
+    # Siempre actualizar el docente que edita
+    grade_obj.teacher_id = user.id
     db.commit()
-    db.refresh(grade)
-    return _enrich_grade(grade)
+    db.refresh(grade_obj)
+    return _enrich_grade(grade_obj)
 
 
 def delete_grade(db: Session, grade_id: int, user: User) -> None:
