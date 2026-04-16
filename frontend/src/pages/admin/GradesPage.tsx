@@ -3,6 +3,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { DashboardLayout } from "../../layouts/DashboardLayout";
+import styles from "./GradesPage.module.css";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Select } from "../../components/Select";
@@ -43,9 +44,11 @@ export function GradesPage() {
     enrollments?.map((enrollment) => ({
       value: String(enrollment.id),
       label:
-        enrollment.subject_name && enrollment.period_name
-          ? `${enrollment.subject_name} · ${enrollment.period_name}`
-          : `Inscripción #${enrollment.id}`
+        enrollment.user_full_name && enrollment.subject_name && enrollment.period_name
+          ? `${enrollment.user_full_name} · ${enrollment.subject_name} · ${enrollment.period_name}`
+          : enrollment.user_full_name
+            ? `${enrollment.user_full_name} (Inscripción #${enrollment.id})`
+            : `Inscripción #${enrollment.id}`
     })) ?? [];
   const hasGrades = (grades?.length ?? 0) > 0;
 
@@ -80,13 +83,13 @@ export function GradesPage() {
 
   return (
     <DashboardLayout>
-      <div className="grid grid-2">
+      <div className={`grid grid-2 ${styles["grades-responsive"]}`}> 
         <div className="card">
           <h2>Registrar calificación</h2>
           {alert ? <Alert message={alert.message} variant={alert.variant} /> : null}
           <form onSubmit={createForm.handleSubmit(handleCreate)} className="grid">
             <Select
-              label="Inscripción"
+              label="Inscripción (Estudiante · Materia · Periodo)"
               options={[{ value: "", label: "Selecciona una inscripción" }, ...enrollmentOptions]}
               {...createForm.register("enrollment_id")}
               error={createForm.formState.errors.enrollment_id?.message}
@@ -141,27 +144,29 @@ export function GradesPage() {
         ) : !hasGrades ? (
           <p>No hay calificaciones registradas.</p>
         ) : (
-          <Table<GradeResponse>
-            caption="Listado de calificaciones"
-            data={grades ?? []}
-            columns={[
-              { header: "ID", render: (row) => row.id },
-              {
-                header: "Estudiante",
-                render: (row) => row.student_full_name ?? "-"
-              },
-              {
-                header: "Materia",
-                render: (row) => row.subject_name ?? "-"
-              },
-              {
-                header: "Profesor",
-                render: (row) => row.teacher_full_name ?? "-"
-              },
-              { header: "Nota", render: (row) => row.value },
-              { header: "Notas", render: (row) => row.notes ?? "-" }
-            ]}
-          />
+          <div className="table-responsive">
+            <Table<GradeResponse>
+              caption="Listado de calificaciones"
+              data={grades ?? []}
+              columns={[
+                { header: "ID", render: (row) => row.id },
+                {
+                  header: "Estudiante",
+                  render: (row) => row.student_full_name ?? "-"
+                },
+                {
+                  header: "Materia",
+                  render: (row) => row.subject_name ?? "-"
+                },
+                {
+                  header: "Profesor",
+                  render: (row) => row.teacher_full_name ?? "-"
+                },
+                { header: "Nota", render: (row) => row.value },
+                { header: "Notas", render: (row) => row.notes ?? "-" }
+              ]}
+            />
+          </div>
         )}
       </div>
     </DashboardLayout>
