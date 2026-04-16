@@ -1,8 +1,14 @@
 """
 Revision ID: add_teacher_id_to_grades
-Revises: 
+Revises: f7c56be4e8fd
 Create Date: 2026-04-16
 """
+
+# revision identifiers, used by Alembic.
+revision = 'add_teacher_id_to_grades'
+down_revision = 'f7c56be4e8fd'
+branch_labels = None
+depends_on = None
 from alembic import op
 import sqlalchemy as sa
 
