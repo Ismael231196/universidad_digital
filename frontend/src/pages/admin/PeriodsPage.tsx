@@ -38,6 +38,13 @@ export function PeriodsPage() {
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
+  const handleEdit = (period: PeriodResponse) => {
+    updateForm.setValue("id", String(period.id));
+    updateForm.setValue("name", period.name);
+    updateForm.setValue("start_date", period.start_date);
+    updateForm.setValue("end_date", period.end_date);
+  };
+
   const handleCreate = async (values: CreateForm) => {
     try {
       await periodsService.create(values);
@@ -155,12 +162,20 @@ export function PeriodsPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button
-                    variant={row.is_active ? "danger" : "secondary"}
-                    onClick={() => handleToggleActive(row.id, row.is_active)}
-                  >
-                    {row.is_active ? "Desactivar" : "Activar"}
-                  </Button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button
+                      variant={row.is_active ? "danger" : "secondary"}
+                      onClick={() => handleToggleActive(row.id, row.is_active)}
+                    >
+                      {row.is_active ? "Desactivar" : "Activar"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleEdit(row)}
+                    >
+                      Editar
+                    </Button>
+                  </div>
                 )
               }
             ]}

@@ -147,8 +147,12 @@ export function GradesPage() {
             columns={[
               { header: "ID", render: (row) => row.id },
               {
-                header: "Inscripción",
-                render: (row) => row.enrollment_label ?? `Inscripción #${row.enrollment_id}`
+                header: "Estudiante",
+                render: (row) => row.student_full_name ?? "-"
+              },
+              {
+                header: "Materia",
+                render: (row) => row.subject_name ?? "-"
               },
               { header: "Nota", render: (row) => row.value },
               { header: "Notas", render: (row) => row.notes ?? "-" }

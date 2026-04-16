@@ -36,6 +36,12 @@ export function SubjectsPage() {
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
+  const handleEdit = (subject: SubjectResponse) => {
+    updateForm.setValue("id", String(subject.id));
+    updateForm.setValue("name", subject.name);
+    updateForm.setValue("credits", subject.credits);
+  };
+
   const handleCreate = async (values: CreateForm) => {
     try {
       await subjectsService.create(values);
@@ -143,12 +149,20 @@ export function SubjectsPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button
-                    variant={row.is_active ? "danger" : "secondary"}
-                    onClick={() => handleToggleActive(row.id, row.is_active)}
-                  >
-                    {row.is_active ? "Desactivar" : "Activar"}
-                  </Button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button
+                      variant={row.is_active ? "danger" : "secondary"}
+                      onClick={() => handleToggleActive(row.id, row.is_active)}
+                    >
+                      {row.is_active ? "Desactivar" : "Activar"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleEdit(row)}
+                    >
+                      Editar
+                    </Button>
+                  </div>
                 )
               }
             ]}

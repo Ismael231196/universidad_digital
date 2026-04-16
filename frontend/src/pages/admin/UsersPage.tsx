@@ -44,6 +44,12 @@ export function UsersPage() {
     roles?.map((role) => ({ value: String(role.id), label: `${role.name} (#${role.id})` })) ??
     [];
 
+  const handleEdit = (user: UserResponse) => {
+    updateForm.setValue("id", String(user.id));
+    updateForm.setValue("full_name", user.full_name);
+    updateForm.setValue("is_active", user.is_active ? "true" : "false");
+  };
+
   const handleCreate = async (values: CreateForm) => {
     try {
       await usersService.create({
@@ -170,12 +176,20 @@ export function UsersPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button
-                    variant={row.is_active ? "danger" : "secondary"}
-                    onClick={() => void handleToggleActive(row.id, row.is_active)}
-                  >
-                    {row.is_active ? "Desactivar" : "Activar"}
-                  </Button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button
+                      variant={row.is_active ? "danger" : "secondary"}
+                      onClick={() => void handleToggleActive(row.id, row.is_active)}
+                    >
+                      {row.is_active ? "Desactivar" : "Activar"}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleEdit(row)}
+                    >
+                      Editar
+                    </Button>
+                  </div>
                 )
               }
             ]}
