@@ -61,10 +61,10 @@ export function SubjectsPage() {
     }
   };
 
-  const handleDeactivate = async (id: number) => {
+  const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
-      await subjectsService.deactivate(id);
-      setAlert({ message: "Materia desactivada.", variant: "success" });
+      await subjectsService.update(id, { is_active: !isActive });
+      setAlert({ message: isActive ? "Materia desactivada." : "Materia activada.", variant: "success" });
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -128,6 +128,8 @@ export function SubjectsPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !(subjects?.length ?? 0) ? (
+          <p>No hay materias activas para mostrar.</p>
         ) : (
           <Table<SubjectResponse>
             caption="Listado de materias"
@@ -141,8 +143,11 @@ export function SubjectsPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button variant="danger" onClick={() => void handleDeactivate(row.id)}>
-                    Desactivar
+                  <Button
+                    variant={row.is_active ? "danger" : "secondary"}
+                    onClick={() => handleToggleActive(row.id, row.is_active)}
+                  >
+                    {row.is_active ? "Desactivar" : "Activar"}
                   </Button>
                 )
               }

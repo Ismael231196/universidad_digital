@@ -96,10 +96,10 @@ export function EnrollmentsPage() {
     }
   };
 
-  const handleDeactivate = async (id: number) => {
+  const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
-      await enrollmentsService.deactivate(id);
-      setAlert({ message: "Inscripción cancelada.", variant: "success" });
+      await enrollmentsService.update(id, { is_active: !isActive });
+      setAlert({ message: isActive ? "Inscripción desactivada." : "Inscripción activada.", variant: "success" });
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -140,7 +140,7 @@ export function EnrollmentsPage() {
         {isLoading ? (
           <p>Cargando...</p>
         ) : !hasEnrollments ? (
-          <p>No hay inscripciones registradas.</p>
+          <p>No hay inscripciones activas para mostrar.</p>
         ) : (
           <Table<EnrollmentResponse>
             caption="Listado de inscripciones"
@@ -167,8 +167,11 @@ export function EnrollmentsPage() {
                     <Button variant="secondary" style={{ marginRight: 8 }} onClick={() => handleEditClick(row)}>
                       Editar
                     </Button>
-                    <Button variant="danger" onClick={() => void handleDeactivate(row.id)}>
-                      Cancelar
+                    <Button
+                      variant={row.is_active ? "danger" : "secondary"}
+                      onClick={() => handleToggleActive(row.id, row.is_active)}
+                    >
+                      {row.is_active ? "Desactivar" : "Activar"}
                     </Button>
                   </>
                 )

@@ -155,6 +155,8 @@ export function UsersPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !(users?.length ?? 0) ? (
+          <p>No hay usuarios activos para mostrar.</p>
         ) : (
           <Table<UserResponse>
             caption="Listado de usuarios"

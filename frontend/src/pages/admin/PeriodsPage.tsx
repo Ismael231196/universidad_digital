@@ -64,10 +64,10 @@ export function PeriodsPage() {
     }
   };
 
-  const handleDeactivate = async (id: number) => {
+  const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
-      await periodsService.deactivate(id);
-      setAlert({ message: "Periodo desactivado.", variant: "success" });
+      await periodsService.update(id, { is_active: !isActive });
+      setAlert({ message: isActive ? "Periodo desactivado." : "Periodo activado.", variant: "success" });
       await reload();
     } catch (err) {
       setAlert({ message: getErrorMessage(err), variant: "error" });
@@ -139,6 +139,8 @@ export function PeriodsPage() {
         {error ? <Alert message={error} /> : null}
         {isLoading ? (
           <p>Cargando...</p>
+        ) : !(periods?.length ?? 0) ? (
+          <p>No hay periodos activos para mostrar.</p>
         ) : (
           <Table<PeriodResponse>
             caption="Listado de periodos"
@@ -153,8 +155,11 @@ export function PeriodsPage() {
               {
                 header: "Acciones",
                 render: (row) => (
-                  <Button variant="danger" onClick={() => void handleDeactivate(row.id)}>
-                    Desactivar
+                  <Button
+                    variant={row.is_active ? "danger" : "secondary"}
+                    onClick={() => handleToggleActive(row.id, row.is_active)}
+                  >
+                    {row.is_active ? "Desactivar" : "Activar"}
                   </Button>
                 )
               }
