@@ -41,7 +41,6 @@ export function EnrollmentsPage() {
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
-<<<<<<< HEAD
   const userOptions =
     users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ?? [];
   const subjectOptions =
@@ -55,22 +54,6 @@ export function EnrollmentsPage() {
       label: `${period.name} (#${period.id})`
     })) ?? [];
   const hasEnrollments = (enrollments?.length ?? 0) > 0;
-=======
-  const userOptions =
-    users?.map((user) => ({ value: String(user.id), label: `${user.full_name} (#${user.id})` })) ??
-    [];
-  const subjectOptions =
-    subjects?.map((subject) => ({
-      value: String(subject.id),
-      label: `${subject.name} (#${subject.id})`
-    })) ?? [];
-  const periodOptions =
-    periods?.map((period) => ({
-      value: String(period.id),
-      label: `${period.name} (#${period.id})`
-    })) ?? [];
-  const hasEnrollments = (enrollments?.length ?? 0) > 0;
->>>>>>> d7bdcfa5c2b3433d6f208358fd281af705f1f644
 
   const handleCreate = async (values: CreateForm) => {
     try {
