@@ -19,8 +19,10 @@ from app.users.models import User
 def authenticate_user(db: Session, email: str, password: str) -> User:
     """Valida credenciales y estado del usuario."""
     user = db.scalar(select(User).where(User.email == email.lower().strip()))
-    if not user or not verify_password(password, user.hashed_password):
-        raise UnauthorizedError("Credenciales inválidas.")
+    if not user:
+        raise UnauthorizedError("El correo no está registrado.")
+    if not verify_password(password, user.hashed_password):
+        raise UnauthorizedError("La contraseña es incorrecta.")
     if not user.is_active:
         raise ForbiddenError("Usuario inactivo.")
     return user
