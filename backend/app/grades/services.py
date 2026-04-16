@@ -52,6 +52,12 @@ def create_grade(db: Session, data: GradeCreate) -> Grade:
         raise NotFoundError("Inscripción no encontrada.")
     if not enrollment.is_active:
         raise ConflictError("Inscripción inactiva.")
+    # Validar que no exista ya una calificación para esta inscripción
+    exists = db.scalar(
+        select(Grade).where(Grade.enrollment_id == data.enrollment_id)
+    )
+    if exists:
+        raise ConflictError("Ya existe una calificación para este estudiante y materia en este periodo.")
     grade = Grade(
         enrollment_id=data.enrollment_id,
         value=Decimal(str(data.value)),  # Convert float to Decimal

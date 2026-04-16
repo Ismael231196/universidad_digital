@@ -10,14 +10,17 @@ import { Select } from "../../components/Select";
 import { Table } from "../../components/Table";
 import { Alert } from "../../components/Alert";
 import { gradesService } from "../../services/gradesService";
+import { usersService } from "../../services/usersService";
+import { subjectsService } from "../../services/subjectsService";
 import { enrollmentsService } from "../../services/enrollmentsService";
 import { useFetch } from "../../hooks/useFetch";
 import { getErrorMessage } from "../../utils/apiError";
 import type { GradeResponse } from "../../api/grades";
 
 const createSchema = z.object({
-  enrollment_id: z.string().min(1),
-  value: z.coerce.number().min(0).max(100),
+  user_id: z.string().min(1, "Selecciona un estudiante."),
+  subject_id: z.string().min(1, "Selecciona una materia."),
+  value: z.coerce.number().min(0, "La nota debe ser mayor o igual a 0.").max(100, "La nota debe ser menor o igual a 100."),
   notes: z.string().optional()
 });
 
@@ -35,27 +38,44 @@ export function GradesPage() {
     null
   );
   const { data: grades, error, isLoading, reload } = useFetch(gradesService.list, []);
+  const { data: users } = useFetch(usersService.list, []);
+  const { data: subjects } = useFetch(subjectsService.list, []);
   const { data: enrollments } = useFetch(enrollmentsService.list, []);
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const updateForm = useForm<UpdateForm>({ resolver: zodResolver(updateSchema) });
 
-  const enrollmentOptions =
-    enrollments?.map((enrollment) => ({
-      value: String(enrollment.id),
-      label:
-        enrollment.user_full_name && enrollment.subject_name && enrollment.period_name
-          ? `${enrollment.user_full_name} · ${enrollment.subject_name} · ${enrollment.period_name}`
-          : enrollment.user_full_name
-            ? `${enrollment.user_full_name} (Inscripción #${enrollment.id})`
-            : `Inscripción #${enrollment.id}`
-    })) ?? [];
+  const userOptions =
+    users?.filter(u => u.roles.includes("Estudiante") && u.is_active)
+      .map((user) => ({ value: String(user.id), label: user.full_name })) ?? [];
+  const subjectOptions =
+    subjects?.filter(s => s.is_active)
+      .map((subject) => ({ value: String(subject.id), label: subject.name })) ?? [];
   const hasGrades = (grades?.length ?? 0) > 0;
 
   const handleCreate = async (values: CreateForm) => {
+    setDuplicateError(null);
+    // Validación frontend: no permitir duplicados
+    const alreadyExists = (grades ?? []).some(
+      (g) => String(g.student_full_name) === users?.find(u => String(u.id) === values.user_id)?.full_name &&
+              String(g.subject_name) === subjects?.find(s => String(s.id) === values.subject_id)?.name
+    );
+    if (alreadyExists) {
+      setDuplicateError("Ya existe una calificación para este estudiante y materia.");
+      return;
+    }
+    // Buscar la inscripción correspondiente
+    const enrollment = (enrollments ?? []).find(
+      (e) => String(e.user_id) === values.user_id && String(e.subject_id) === values.subject_id && e.is_active
+    );
+    if (!enrollment) {
+      setDuplicateError("No existe una inscripción activa para este estudiante y materia. Primero debe inscribir al estudiante en la materia.");
+      return;
+    }
     try {
       await gradesService.create({
-        enrollment_id: Number(values.enrollment_id),
+        enrollment_id: enrollment.id,
         value: Number(values.value),
         notes: values.notes ?? null
       });
@@ -88,11 +108,18 @@ export function GradesPage() {
           <h2>Registrar calificación</h2>
           {alert ? <Alert message={alert.message} variant={alert.variant} /> : null}
           <form onSubmit={createForm.handleSubmit(handleCreate)} className="grid">
+            {duplicateError && <Alert message={duplicateError} variant="error" />}
             <Select
-              label="Inscripción (Estudiante · Materia · Periodo)"
-              options={[{ value: "", label: "Selecciona una inscripción" }, ...enrollmentOptions]}
-              {...createForm.register("enrollment_id")}
-              error={createForm.formState.errors.enrollment_id?.message}
+              label="Estudiante"
+              options={[{ value: "", label: "Selecciona un estudiante" }, ...userOptions]}
+              {...createForm.register("user_id")}
+              error={createForm.formState.errors.user_id?.message}
+            />
+            <Select
+              label="Materia"
+              options={[{ value: "", label: "Selecciona una materia" }, ...subjectOptions]}
+              {...createForm.register("subject_id")}
+              error={createForm.formState.errors.subject_id?.message}
             />
             <Input
               label="Nota"
